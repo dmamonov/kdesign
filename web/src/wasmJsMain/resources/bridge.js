@@ -11,7 +11,7 @@ window.designer = {
   value(id) { return document.getElementById(id)?.value ?? ''; },
   pixel(id, color) { const el = document.getElementById(id); if(el) el.style.backgroundColor = color; },
   request(method, url, body, done) {
-    fetch(url, {method, headers: {'Content-Type':'application/json'}, ...(method === 'GET' ? {} : {body})})
+    fetch(url, {method, signal: AbortSignal.timeout(url==='/api/generate' ? 100000 : 15000), headers: {'Content-Type':'application/json'}, ...(method === 'GET' ? {} : {body})})
       .then(async r => { const text = await r.text(); done(r.ok, text); })
       .catch(e => done(false, e.message));
   },

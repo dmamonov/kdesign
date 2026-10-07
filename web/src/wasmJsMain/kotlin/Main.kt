@@ -115,7 +115,7 @@ fun usagesView(): String {
 }
 fun modalView(): String {
     val concept=project.concepts.find {it.id==selected}
-    val title=if(modal=="Portal") "Connect two places" else if(modal=="Edit concept") "Edit concept" else "Create ${modal.lowercase().removeSuffix("s")}"
+    val title=if(modal=="Project") "Edit project title" else if(modal=="Portal") "Connect two places" else if(modal=="Edit concept") "Edit concept" else "Create ${modal.lowercase().removeSuffix("s")}"
     return "<div class='overlay'><section class='dialog'><div class='section-title'><h2>$title</h2>${button("×","close-modal",cls="tiny")}</div>${if(message.isNotBlank()) "<p class='modal-error' role='alert'>${text(message)}</p>" else ""}" + when(modal) {
         "Project" -> field("new-name","Project title",project.title)
         "Portal" -> field("new-name","Portal label","Enter passage") + "<label class='field'>Destination level<select id='target-level'>${project.levels.joinToString(""){"<option value='${esc(it.id)}'>${text(it.title)}</option>"}}</select></label>" + field("target-path","Instance path (optional, slash separated)") + "<p class='muted'>Leave empty for the level root. Otherwise enter placement IDs leading to a meta block, e.g. cave-door.</p>"
@@ -181,6 +181,10 @@ fun generate() {
 }
 fun action(kind: String, id: String, v: String) {
     try {
+        if(tableErrors.isNotEmpty() && kind in setOf("section", "tab", "select", "open", "reference-open", "text-usage-open", "usage-open", "portal-go", "new", "close-modal", "concept-edit")) {
+            showError("Correct the invalid input before leaving this editor, or use Undo to discard it.")
+            return
+        }
         when(kind) {
             "form-edit" -> {editForm(id,v);return}
             "table-edit" -> {
