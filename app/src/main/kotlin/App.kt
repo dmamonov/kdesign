@@ -29,7 +29,7 @@ class FileStore(directory: Path) {
     @Synchronized fun write(name: String, content: String) {
         val path = resolve(name)
         require(path != root) { "A file path is required" }
-        if (name == "project.json") json.decodeFromString<Project>(content).validate()
+        if (path == root.resolve("project.json")) json.decodeFromString<Project>(content).validate()
         Files.createDirectories(path.parent)
         val temp = Files.createTempFile(path.parent, ".write-", ".tmp")
         try {

@@ -37,6 +37,7 @@ val fieldLabels = listOf("Description", "Player mechanics", "Player goals", "Des
         require(version == 1) { "Unsupported project version" }
         val ids = tiles.map { it.id } + blocks.map { it.id } + levels.map { it.id } + concepts.map { it.id }
         require(ids.all { it.isNotBlank() } && ids.distinct().size == ids.size) { "Entity IDs must be unique and nonempty" }
+        textReferences().forEach { require(it.targetId in ids) { "Missing text reference [[${it.targetId}]] in ${it.field}" } }
         tiles.forEach { require(it.size in listOf(8, 16) && it.pixels.size == it.size * it.size && it.pixels.all { p -> p in -1..63 }) { "Invalid tile ${it.name}" } }
         blocks.forEach { b ->
             require(b.kind in listOf("block", "meta") && b.width in 8..4096 && b.height in 8..4096) { "Invalid block dimensions or kind" }
@@ -75,8 +76,9 @@ val fieldLabels = listOf("Description", "Player mechanics", "Player goals", "Des
     fun usages(assetId: String): List<Usage> {
         val result = mutableListOf<Usage>()
         blocks.forEach { b -> b.children.filter { it.assetId == assetId }.forEach { result += Usage(null, b.id, listOf(it.id), "Direct placement in ${b.name}") } }
+        blocks.filter { assetId in it.conceptIds }.forEach { result += Usage(null, it.id, emptyList(), "Concept attached to ${it.name}") }
         fun walk(level: Level, id: String, path: List<String>, seen: Set<String>) {
-            if (id == assetId) result += Usage(level.id, id, path, (listOf(level.title) + path).joinToString(" / "))
+            if (id == assetId || blocks.find { it.id == id }?.conceptIds?.contains(assetId) == true) result += Usage(level.id, id, path, (listOf(level.title) + path).joinToString(" / "))
             if (id in seen) return
             blocks.find { it.id == id }?.children?.forEach { walk(level, it.assetId, path + it.id, seen + id) }
         }
@@ -87,7 +89,10 @@ val fieldLabels = listOf("Description", "Player mechanics", "Player goals", "Des
             p.targetPath.forEach { step -> target = blocks.find { it.id == target }?.children?.find { it.id == step }?.assetId }
             if (target == assetId) result += Usage(null, b.id, emptyList(), "Portal reference: ${b.name} → ${p.label}")
         } }
+        textReferences().filter { it.targetId == assetId }.forEach { ref ->
+            result += Usage(null, ref.ownerId, emptyList(), "${if(ref.ownerId.isEmpty()) displayText(title) else displayText(name(ref.ownerId))} · ${ref.field}", ref.field)
+        }
         return result
     }
 }
-data class Usage(val levelId: String?, val ownerId: String, val path: List<String>, val label: String)
+data class Usage(val levelId: String?, val ownerId: String, val path: List<String>, val label: String, val field: String? = null)

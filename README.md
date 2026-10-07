@@ -35,7 +35,7 @@ To enable generation, export the key in your shell before starting the server. D
 - **Concepts:** create and edit gates, mechanics, switches, quests, puzzles, inventory objects, and map objects with the requested subcategories.
 - **Find usages:** direct placements, every transitive occurrence across all levels, and incoming portal references. Open a result to navigate to its owner/level and highlight its first placement; the full instance path is shown for deeper navigation.
 
-The starting canvas uses a 16-pixel placement grid. 8-pixel tile art is supported; exact 8-pixel composition positions are supported in the file model but do not yet have a dedicated UI snapping control. This is an authoring tool, not a playable game engine. Entity deletion, redo, multi-user merging, animation, collision simulation, and richer visual quest graphs are future work. The current concept selector attaches one concept per definition; the file model supports multiple.
+The canvas supports 8- and 16-pixel placement grids. This is an authoring tool, not a playable game engine. Entity deletion, redo, multi-user merging, animation, collision simulation, and richer visual quest graphs are future work. The current concept selector attaches one concept per definition; the file model supports multiple.
 
 ## Model and backtracing
 

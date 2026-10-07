@@ -35,6 +35,9 @@ class ModelTest {
         assertFails {p.copy(blocks=p.blocks.map {if(it.id=="meta-entrance") it.copy(portals=listOf(Portal("Broken","level-cave",listOf("missing")))) else it}).validate()}
         assertFails {p.copy(levels=p.levels.map {it.copy(parentId=it.id)}).validate()}
     }
+    @Test fun conceptsTraceThroughAttachedBlocks() {
+        assertEquals(6, sampleProject().usages("concept-quest").count {it.levelId != null})
+    }
     @Test fun findsIncomingPortalReferences() {
         assertTrue(sampleProject().usages("meta-entrance").any {it.label.startsWith("Portal reference")})
     }
