@@ -1,7 +1,7 @@
 // Browser-only IO. All application state, rendering, validation and editing live in Kotlin/Wasm.
 window.designer = {
   mount(html) {
-    document.getElementById('reference-picker')?.remove();
+    document.getElementById('reference-picker')?.remove();document.getElementById('block-picker')?.remove();
     const view=document.querySelector('main')?.dataset.view;
     const selectors=['.scene-scroll','.asset-list','.instances','.explorer','.table-scroll'];
     const positions=selectors.map(s=>{const el=document.querySelector(s);return el ? [el.scrollLeft,el.scrollTop] : [0,0];});
@@ -16,6 +16,7 @@ window.designer = {
       .catch(e => done(false, e.message));
   },
   bind(action) {
+    window.designer.bindMap(action);
     let painting = false;
     let referenceEditor = null, referenceStart = 0, referenceEnd = 0, activeChoice = 0;
     const commitTable = editor => {
