@@ -22,12 +22,9 @@ var brush = 22
 var assetBrush = ""
 var eraser = false
 var message = ""
-var dirty = false
-var saving = false
 var generating = false
 var generationAvailable = false
 var loaded = false
-var revision = 0
 var modal = ""
 var usageId = ""
 var highlightPath = emptyList<String>()
@@ -43,9 +40,9 @@ fun field(id: String, label: String, v: String = "", multiline: Boolean = false)
     return "<div class='field-wrap'><label class='field' for='$id'>$label$input</label>" + if(references) "<div class='reference-tools'>${button("@ Reference","reference-picker",id,cls="tiny")}<small>Type @ to link an object</small></div><div class='reference-preview' id='$id-preview'>${rich(v)}</div></div>" else "</div>"
 }
 fun checkpoint() { history += project; if(history.size>50) history.removeAt(0) }
-fun changed() { dirty=true; revision++; setDirty(true) }
+fun changed() { autosave.edited();queueSave() }
 fun change(transform: (Project) -> Project) {
-    val next=transform(project); next.validate(); checkpoint(); project=next; changed()
+    val next=transform(project); if(next==project) return; next.validate(); checkpoint(); project=next; changed()
 }
 fun currentLevel() = project.levels.find { it.id==selected }
 fun currentBlock() = project.blocks.find { it.id==(currentLevel()?.rootId ?: selected) }
@@ -56,7 +53,7 @@ fun svg(id: String, width: Int = project.size(id).first, height: Int = project.s
         project.tiles.find { it.id==asset }?.let { t -> return t.pixels.mapIndexedNotNull { i,c -> if(c<0) null else "<rect x='${x+i%t.size}' y='${y+i/t.size}' width='1' height='1' fill='${palette[c]}'/>" }.joinToString("") }
         return project.blocks.find { it.id==asset }?.children?.joinToString("") { draw(it.assetId,x+it.x,y+it.y,seen+asset) } ?: ""
     }
-    return "<svg viewBox='0 0 $width $height' shape-rendering='crispEdges' aria-label='${esc(project.name(id))}' role='img'>" +
+    return "<svg viewBox='0 0 $width $height' shape-rendering='crispEdges' aria-label='${text(project.name(id))}' role='img'>" +
         (if(grid) "<defs><pattern id='grid' width='$snap' height='$snap' patternUnits='userSpaceOnUse'><path d='M $snap 0 L 0 0 0 $snap' fill='none' stroke='#ffffff0a' stroke-width='.4'/></pattern></defs><rect width='100%' height='100%' fill='url(#grid)'/>" else "") + draw(id,0,0,emptySet()) + "</svg>"
 }
 fun render() {
@@ -70,12 +67,12 @@ fun render() {
         <div class='nav-label'>WORKSPACE</div><nav>${listOf("Levels" to "▤", "Tiles" to "▦", "Blocks" to "▧", "Meta blocks" to "▱", "Concepts" to "◇").joinToString("") { (name,icon) -> button("<span>$icon</span>$name<span class='count'>${when(name) { "Levels"->project.levels.size; "Tiles"->project.tiles.size; "Blocks"->project.blocks.count {it.kind=="block"}; "Meta blocks"->project.blocks.count {it.kind=="meta"}; else->project.concepts.size }}</span>","section",name,cls=if(section==name) "active" else "") } }</nav>
         <div class='nav-label'>${if(section=="Concepts") "CATEGORIES" else "EXPLORER"} ${button("+","new",cls="tiny",v=section)}</div>
         <div class='explorer'>${explorer()}</div><div class='sidebar-bottom'><span class='green-dot'></span> Local workspace<small>data/project.json</small></div></aside>
-        <main data-view='${text(section)}:${esc(selected)}:${text(tab)}'><header><div class='breadcrumbs'>${rich(project.title)} <span>/</span> ${text(section)}</div><div class='header-actions'><span class='save-state'>${if(saving) "Saving…" else if(dirty) "● Unsaved changes" else "✓ Saved locally"}</span>${button("↶ Undo","undo",cls="quiet")}${button(if(saving) "Saving…" else "Save project","save",cls="primary")}</div></header>
+        <main data-view='${text(section)}:${esc(selected)}:${text(tab)}'><header><div class='breadcrumbs'>${rich(project.title)} <span>/</span> ${text(section)}</div><div class='header-actions'><span class='save-state'>${text(statusText())}</span>${button("↶ Undo","undo",cls="quiet")}${button("Save now","save",cls="quiet")}</div></header>
         <div class='page-heading'><div><div class='eyebrow'>${when(section) { "Levels"->"WORLD DESIGN"; "Tiles"->"PIXEL WORKSHOP"; "Concepts"->"SYSTEMS & INTENT"; else->"ASSET WORKSHOP" }}</div><h1>${rich(heading)}</h1><p>${when(section) { "Levels"->"Shape the journey. Give every place a purpose."; "Tiles"->"Small pixels. A world of possibility."; "Concepts"->"Connect the rules, rewards, and reasons to explore."; else->"Build once. Bring it to life everywhere." }}</p></div><div class='heading-actions'>${if(section!="Concepts") button("⌕ Find usages","usages",selected) else ""}${button("+ New ${when(section) {"Levels"->"level"; "Tiles"->"tile"; "Concepts"->"concept"; else->"block"}}","new",v=section)}</div></div>
         ${if(message.isNotBlank()) "<div class='notice' role='status'>${text(message)}${button("×","dismiss",cls="tiny")}</div>" else ""}
         <div class='tabbar'>${(when(section) { "Levels"->listOf("Canvas","Design brief","Table"); "Concepts"->listOf("Library"); else->listOf("Editor","Properties") }).joinToString("") { button(it,"tab",it,cls=if(tab==it) "active" else "") }}<span>${if(tile!=null) "${tile.size} × ${tile.size} PX • NES PALETTE" else if(block!=null) "${block.width} × ${block.height} PX • ${block.children.size} PLACEMENTS" else "SHARED DESIGN LANGUAGE"}</span></div>
         <div class='page-body'>${when { section=="Concepts"->conceptsView(); tab=="Table"->tableView(); tab=="Design brief" && level!=null->briefView(level); tab=="Properties"->propertiesView(); tile!=null->tileView(tile); block!=null->canvasView(block,level); else->"<div class='empty'>Create an asset to begin.</div>" }}</div>
-        <footer><span><span class='green-dot'></span> Kotlin / WebAssembly</span><span>Definitions → instances → worlds</span><span>⌘ / Ctrl S to save</span></footer></main>
+        <footer><span><span class='green-dot'></span> Kotlin / WebAssembly</span><span>Definitions → instances → worlds</span><span>Autosave enabled</span></footer></main>
         ${if(usageId.isNotBlank()) usagesView() else ""}${if(modal.isNotBlank()) modalView() else ""}
     """.trimIndent())
 }
@@ -101,15 +98,15 @@ fun canvasView(b: Block, l: Level?): String {
     ${if(l!=null) "<section class='panel padded'><div class='eyebrow'>PLAYER GOALS</div><p>${rich(l.notes["playerGoals"] ?: "No goals yet")}</p><div class='eyebrow'>EMOTIONAL BAITS</div><p class='muted'>${rich(l.notes["emotionalBaits"] ?: "No emotional baits yet")}</p></section>" else if(b.kind=="block") generationPanel() else ""}
     <section class='panel padded'><div class='eyebrow'>CONNECTIONS</div><h3>Doors to other places</h3>${b.portals.joinToString("") { p -> button("↗ ${text(p.label)}<small>${text(project.name(p.targetLevelId))}</small>","portal-go",p.targetLevelId,p.targetPath.joinToString("/"),"portal-link") }.ifBlank { "<p class='muted'>No outgoing portals on this definition.</p>" }}${if(b.kind=="meta") button("+ Add portal","new",v="Portal",cls="wide") else ""}</section></aside></div>"""
 }
-fun briefView(l: Level) = "<section class='panel padded'><div class='section-title'><div><h3>Level design brief</h3><p class='muted'>The intent behind the space.</p></div>${button("Apply brief","brief-save",cls="primary")}</div><div class='form-grid'>${field("title","Title",l.title)}<label class='field'>Parent level<select id='parent'><option value=''>Independent space</option>${project.levels.filter {it.id!=l.id}.joinToString(""){ "<option value='${esc(it.id)}' ${if(it.id==l.parentId) "selected" else ""}>${text(it.title)}</option>" }}</select></label>${levelFields.mapIndexed { i,k -> field(k,fieldLabels[i],l.notes[k] ?: "",true) }.joinToString("")}</div></section>"
-fun tableView() = "<section class='panel table-scroll'><div class='panel-bar'>Level overview <small>Edit any cell · changes apply when you leave the field · Save project writes to disk</small></div><table class='editable-levels'><thead><tr><th>Level / space</th>${fieldLabels.joinToString(""){"<th>$it</th>"}}</tr></thead><tbody>${project.levels.joinToString(""){ l -> "<tr><td>${tableField(l,"title","Title",l.title)}${button("Open level →","select",l.id,cls="text-link")}<small>${l.parentId?.let { "↳ ${text(project.name(it))}" } ?: "Independent space"}</small></td>${levelFields.mapIndexed { i,k -> "<td>${tableField(l,k,fieldLabels[i],l.notes[k] ?: "")}</td>" }.joinToString("")}</tr>" }}</tbody></table></section>"
+fun briefView(l: Level) = "<section class='panel padded'><div class='section-title'><div><h3>Level design brief</h3><p class='muted'>The intent behind the space.</p></div><span class='muted'>Changes save automatically</span></div><div class='form-grid'>${field("title","Title",l.title)}<label class='field'>Parent level<select id='parent'><option value=''>Independent space</option>${project.levels.filter {it.id!=l.id}.joinToString(""){ "<option value='${esc(it.id)}' ${if(it.id==l.parentId) "selected" else ""}>${text(it.title)}</option>" }}</select></label>${levelFields.mapIndexed { i,k -> field(k,fieldLabels[i],l.notes[k] ?: "",true) }.joinToString("")}</div></section>"
+fun tableView() = "<section class='panel table-scroll'><div class='panel-bar'>Level overview <small>Edit any cell · changes save automatically as you type</small></div><table class='editable-levels'><thead><tr><th>Level / space</th>${fieldLabels.joinToString(""){"<th>$it</th>"}}</tr></thead><tbody>${project.levels.joinToString(""){ l -> "<tr><td>${tableField(l,"title","Title",l.title)}${button("Open level →","select",l.id,cls="text-link")}<small>${l.parentId?.let { "↳ ${text(project.name(it))}" } ?: "Independent space"}</small></td>${levelFields.mapIndexed { i,k -> "<td>${tableField(l,k,fieldLabels[i],l.notes[k] ?: "")}</td>" }.joinToString("")}</tr>" }}</tbody></table></section>"
 fun tableField(level: Level, key: String, label: String, content: String): String =
     field("table-${level.id}-$key", "${project.displayText(level.title)} · $label", content, multiline=true)
         .replace("data-references='true'", "data-references='true' data-table-owner='${esc(level.id)}' data-table-field='$key'")
 
 fun propertiesView(): String {
     val b=currentBlock(); val t=currentTile()
-    return "<section class='panel padded'><div class='section-title'><h3>Definition properties</h3>${button("Apply properties","properties-save",cls="primary")}</div>${field("name","Name", t?.name ?: b?.name ?: "")}<p class='muted'>Stable ID: ${esc(selected)}</p>" + if(b!=null) "<div class='form-grid'>${field("width","Width (pixels)",b.width.toString())}${field("height","Height (pixels)",b.height.toString())}${field("properties","Semantic properties · one key=value per line",b.properties.entries.joinToString("\n"){"${it.key}=${it.value}"},true)}<label class='field'>Linked concepts<select id='concept'><option value=''>No concept</option>${project.concepts.joinToString(""){"<option value='${esc(it.id)}' ${if(it.id in b.conceptIds) "selected" else ""}>${text(it.category)} / ${text(it.name)}</option>"}}</select><small>This first editor links one concept per definition.</small></label></div><h3>Portals</h3>${b.portals.mapIndexed { i,p -> "<div class='instance'><span>${text(p.label)} → ${text(project.name(p.targetLevelId))} / ${text(p.targetPath.joinToString("/"))}</span>${button("Remove","portal-remove",i.toString(),cls="tiny")}</div>" }.joinToString("")}</section>" else "<p class='muted'>${t?.size} × ${t?.size} pixels · NES palette · transparent background</p></section>"
+    return "<section class='panel padded'><div class='section-title'><h3>Definition properties</h3><span class='muted'>Changes save automatically</span></div>${field("name","Name", t?.name ?: b?.name ?: "")}<p class='muted'>Stable ID: ${esc(selected)}</p>" + if(b!=null) "<div class='form-grid'>${field("width","Width (pixels)",b.width.toString())}${field("height","Height (pixels)",b.height.toString())}${field("properties","Semantic properties · one key=value per line",b.properties.entries.joinToString("\n"){"${it.key}=${it.value}"},true)}<label class='field'>Linked concepts<select id='concept'><option value=''>No concept</option>${project.concepts.joinToString(""){"<option value='${esc(it.id)}' ${if(it.id in b.conceptIds) "selected" else ""}>${text(it.category)} / ${text(it.name)}</option>"}}</select><small>This first editor links one concept per definition.</small></label></div><h3>Portals</h3>${b.portals.mapIndexed { i,p -> "<div class='instance'><span>${text(p.label)} → ${text(project.name(p.targetLevelId))} / ${text(p.targetPath.joinToString("/"))}</span>${button("Remove","portal-remove",i.toString(),cls="tiny")}</div>" }.joinToString("")}</section>" else "<p class='muted'>${t?.size} × ${t?.size} pixels · NES palette · transparent background</p></section>"
 }
 fun conceptsView() = "<div class='concept-grid'>${categories.map { (category,types) -> "<section class='panel padded'><div class='eyebrow'>◇ ${text(category.uppercase())}</div><p class='muted'>${types.joinToString(" · ")}</p>${project.concepts.filter {it.category==category}.joinToString(""){ c -> "<div class='concept-card'><span class='tag'>${text(c.type)}</span><h3>${rich(c.name)}</h3><p>${rich(c.description)}</p><small>${project.blocks.count {c.id in it.conceptIds}} linked definitions</small><div class='concept-actions'>${button("Edit","concept-edit",c.id,cls="tiny")}${button("Find usages","usages",c.id,cls="tiny")}</div></div>" }.ifBlank {"<div class='empty small'>Make room for an idea.</div>"}}${button("+ Add ${category.lowercase()}","new",category,"Concepts","text-link")}</section>" }.joinToString("")}</div>"
 fun usagesView(): String {
@@ -124,7 +121,7 @@ fun modalView(): String {
         "Portal" -> field("new-name","Portal label","Enter passage") + "<label class='field'>Destination level<select id='target-level'>${project.levels.joinToString(""){"<option value='${esc(it.id)}'>${text(it.title)}</option>"}}</select></label>" + field("target-path","Instance path (optional, slash separated)") + "<p class='muted'>Leave empty for the level root. Otherwise enter placement IDs leading to a meta block, e.g. cave-door.</p>"
         "Concepts", "Edit concept" -> field("new-name","Name",concept?.takeIf {modal=="Edit concept"}?.name ?: "") + "<label class='field'>Category<select id='category' data-change='category'>${categories.keys.joinToString(""){ "<option ${if(it==(if(modal=="Edit concept") concept?.category else conceptCategory)) "selected" else ""}>${text(it)}</option>" }}</select></label><label class='field'>Type<select id='concept-type'>${categories[conceptCategory]!!.joinToString(""){"<option ${if(it==concept?.type) "selected" else ""}>${text(it)}</option>"}}</select></label>"+field("concept-description","Description",concept?.takeIf {modal=="Edit concept"}?.description ?: "",true)
         else -> field("new-name","Name") + when(modal) { "Tiles"->"<label class='field'>Tile size<select id='new-size'><option value='16'>16 × 16 pixels</option><option value='8'>8 × 8 pixels</option></select></label>"; else -> "<div class='form-grid'>${field("new-width","Width (pixels)",if(modal=="Levels") "512" else "32")}${field("new-height","Height (pixels)",if(modal=="Levels") "192" else "32")}</div>" } + if(modal=="Levels") "<label class='field'>Parent level<select id='new-parent'><option value=''>Independent space</option>${project.levels.joinToString(""){"<option value='${esc(it.id)}'>${text(it.title)}</option>"}}</select></label>" else ""
-    } + "<div class='dialog-actions'>${button("Cancel","close-modal")}${button(if(modal=="Edit concept") "Apply changes" else "Create","create",cls="primary")}</div></section></div>"
+    } + "<div class='dialog-actions'>${if(modal in listOf("Edit concept","Project")) button("Done","close-modal",cls="primary") else button("Cancel","close-modal")+button("Create","create",cls="primary")}</div></section></div>"
 }
 var conceptCategory = "Gates"
 fun select(id: String) {
@@ -132,16 +129,7 @@ fun select(id: String) {
     section=when { project.tiles.any {it.id==id}->"Tiles"; project.levels.any {it.id==id}->"Levels"; project.blocks.any {it.id==id&&it.kind=="block"}->"Blocks"; else->"Meta blocks" }
     tab=if(section=="Levels") "Canvas" else "Editor"
 }
-fun save() {
-    if(saving) return
-    require(tableErrors.isEmpty()) { "Correct the highlighted table cell before saving" }
-    project.validate(); saving=true; val savedRevision=revision; render()
-    request("PUT","/api/files?path=project.json",json.encodeToString(project)) { ok,text ->
-        saving=false
-        if(ok) { if(revision==savedRevision) {dirty=false;setDirty(false)}; message="Project saved to data/project.json" } else message="Save failed: $text"
-        render()
-    }
-}
+
 fun load() {
     request("GET","/api/files?path=project.json","") { ok,text ->
         try { check(ok) {text}; project=json.decodeFromString<Project>(text); project.validate(); loaded=true; selected=project.levels.firstOrNull()?.id ?: project.tiles.firstOrNull()?.id ?: ""; if(selected.isNotEmpty()) select(selected); message="" }
@@ -186,7 +174,7 @@ fun generate() {
                 p.copy(tiles=p.tiles+t,blocks=blocks)
             }
             if(targetBlock==null) select(t.id)
-            message=if(targetBlock!=null&&!placed) "Tile created in Tiles. The block has no free cell." else "Generated tile added. Review and save when ready."
+            message=if(targetBlock!=null&&!placed) "Tile created in Tiles. The block has no free cell." else "Generated tile added. Saving automatically."
         } catch(e: Exception) {message="Generation failed: ${e.message}"}
         render()
     }
@@ -194,6 +182,7 @@ fun generate() {
 fun action(kind: String, id: String, v: String) {
     try {
         when(kind) {
+            "form-edit" -> {editForm(id,v);return}
             "table-edit" -> {
                 val input=json.parseToJsonElement(v).jsonObject
                 val owner=input["owner"]!!.jsonPrimitive.content
@@ -201,8 +190,9 @@ fun action(kind: String, id: String, v: String) {
                 val content=input["content"]!!.jsonPrimitive.content
                 try {
                     change { p -> p.copy(levels=p.levels.map { l -> if(l.id!=owner) l else if(key=="title") l.copy(title=content.trim().also {require(it.isNotBlank()) { "Level title cannot be empty" }}) else l.copy(notes=l.notes+(key to content)) }) }
-                    tableErrors.remove(id);tableCellState(id, "");publishReferenceObjects();referencePreview(id,rich(content))
+                    tableErrors.remove(id);message="";tableCellState(id, "");publishReferenceObjects();referencePreview(id,rich(content))
                 } catch(e: Exception) { tableErrors.add(id);tableCellState(id,e.message ?: "Invalid value") }
+                updateSaveStatus()
                 return
             }
             "reference-preview" -> { referencePreview(id,rich(v));return }
@@ -222,15 +212,13 @@ fun action(kind: String, id: String, v: String) {
             "stroke" -> {checkpoint();return}
             "paint" -> { val t=currentTile() ?: return; val index=id.toInt(); val c=if(eraser) -1 else brush; project=project.copy(tiles=project.tiles.map {if(it.id==t.id) it.copy(pixels=it.pixels.toMutableList().also {it[index]=c}) else it});changed();pixel("px-$index",if(c<0) "transparent" else palette[c]);return }
             "stroke-end" -> Unit
-            "undo" -> if(history.isNotEmpty()) {project=history.removeAt(history.lastIndex);changed();if(selected !in project.tiles.map{it.id}+project.blocks.map{it.id}+project.levels.map{it.id}) select(project.levels.firstOrNull()?.id ?: project.tiles.firstOrNull()?.id ?: "")}
+            "undo" -> if(history.isNotEmpty()) {tableErrors.clear();project=history.removeAt(history.lastIndex);changed();if(selected !in project.tiles.map{it.id}+project.blocks.map{it.id}+project.levels.map{it.id}) select(project.levels.firstOrNull()?.id ?: project.tiles.firstOrNull()?.id ?: "")}
             "place" -> { val b=currentBlock()!!; val (x,y)=id.split(',').map {it.toInt()}; change {p->p.copy(blocks=p.blocks.map { if(it.id!=b.id) it else if(eraser) it.copy(children=it.children.filterNot {c -> val (w,h)=p.size(c.assetId); x>=c.x&&x<c.x+w&&y>=c.y&&y<c.y+h }) else {require(assetBrush.isNotBlank()){ "Create a child asset first" };it.copy(children=it.children+Placement(uuid(),assetBrush,x,y))} })} }
             "remove" -> {val b=currentBlock()!!;change {p->p.copy(blocks=p.blocks.map {if(it.id==b.id) it.copy(children=it.children.filterNot {it.id==id}) else it})}}
-            "brief-save" -> {val l=currentLevel()!!;change {p->p.copy(levels=p.levels.map {if(it.id==l.id) it.copy(title=value("title").trim().also {require(it.isNotBlank()){ "Enter a title" }}, parentId=value("parent").ifBlank {null}, notes=levelFields.associateWith {value(it)}) else it})};message="Design brief applied. Save project to write it to disk."}
-            "properties-save" -> { val name=value("name").trim();require(name.isNotBlank()){ "Enter a name" };val b=currentBlock();change {p->p.copy(tiles=p.tiles.map {if(it.id==selected) it.copy(name=name) else it}, blocks=p.blocks.map {if(it.id!=b?.id) it else it.copy(name=name,width=value("width").toInt(),height=value("height").toInt(),properties=value("properties").lines().filter {it.isNotBlank()}.associate { val pair=it.split('=',limit=2);require(pair.size==2&&pair[0].isNotBlank()){ "Properties use key=value" };pair[0].trim() to pair[1].trim()},conceptIds=listOf(value("concept")).filter {it.isNotBlank()})})} }
             "new" -> {modal=v;message="";conceptCategory=id.ifBlank {"Gates"}}
             "create" -> create()
             "close-modal" -> modal=""
-            "category" -> {conceptCategory=v; if(modal=="Edit concept") { message="Category changes are applied when you submit the form." }; updateCategoryOptions(); return}
+            "category" -> {conceptCategory=v; updateCategoryOptions(); if(modal=="Edit concept") editForm("category",v); return}
             "concept-edit" -> {selected=id;conceptCategory=project.concepts.first {it.id==id}.category;modal="Edit concept";message=""}
             "usages" -> usageId=id
             "close-usages" -> usageId=""
@@ -239,7 +227,7 @@ fun action(kind: String, id: String, v: String) {
             "generate" -> {generate();return}
         }
     } catch(e: Exception) {message=e.message ?: "Could not apply change";showError(message);return}
-    render()
+    render();updateSaveStatus()
 }
 @JsFun("(html) => { document.getElementById('concept-type').innerHTML = html; }") external fun setOptions(html: String)
 fun updateCategoryOptions() {setOptions(categories[conceptCategory]!!.joinToString(""){"<option>${esc(it)}</option>"})}

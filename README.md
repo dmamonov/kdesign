@@ -12,7 +12,7 @@ Requires JDK 21 and a modern browser with WebAssembly GC support (current Chrome
 
 Open http://localhost:8080. This task builds the browser application and serves it and the API from the same origin. The server binds to loopback only. Stop with Ctrl+C.
 
-On first run, the server creates `data/project.json` with a sample forest, cave sublevel, reusable assets, concepts, and bidirectional portals. Existing project files are never replaced at startup. **Save project** (or Cmd/Ctrl+S) writes changes to disk. Briefs and properties have an Apply button before saving. A reload reads the saved project. Tile strokes and applied model edits support Undo (up to 50 snapshots); unapplied form fields do not.
+On first run, the server creates `data/project.json` with a sample forest, cave sublevel, reusable assets, concepts, and bidirectional portals. Existing project files are never replaced at startup. **All valid edits autosave** to disk after 650 ms of inactivity. This includes typing in briefs, titles, table cells and properties, editing concepts, drawing, placement, creation and undo. **Save now** (or Cmd/Ctrl+S) flushes immediately. New-object dialogs still use Create to commit the new object; generation only runs when explicitly requested. A reload reads the saved project. Tile strokes and applied model edits support Undo (up to 50 snapshots); invalid field drafts do not.
 
 Optional environment variables:
 
@@ -28,7 +28,7 @@ To enable generation, export the key in your shell before starting the server. D
 
 ## Workspaces
 
-- **Levels:** compose a side-scrolling space from blocks, inspect placements, open portals, edit the design brief, and compare every brief field in a horizontally scrolling table. New levels can be children of existing levels, while retaining independent coordinate spaces.
+- **Levels:** compose a side-scrolling space from blocks, inspect placements, open portals, edit the design brief, and edit titles and every brief field directly in a horizontally scrolling table. Cell edits autosave while you type. Invalid cells show an error and retain their draft in the current editor; autosave writes only the last valid model. New levels can be children of existing levels, while retaining independent coordinate spaces.
 - **Tiles:** create 8×8 or 16×16 tiles; draw with the NES-style 64-entry palette or transparency; inspect the live preview; generate editable pixels from a description.
 - **Blocks:** sparse placements of tiles, semantic properties (`key=value`), and a linked design concept.
 - **Meta blocks:** recursively compose blocks or other meta blocks; add portal references to a level root or a nested meta-block instance.
@@ -36,6 +36,16 @@ To enable generation, export the key in your shell before starting the server. D
 - **Find usages:** direct placements, every transitive occurrence across all levels, and incoming portal references. Open a result to navigate to its owner/level and highlight its first placement; the full instance path is shown for deeper navigation.
 
 The canvas supports 8- and 16-pixel placement grids. This is an authoring tool, not a playable game engine. Entity deletion, redo, multi-user merging, animation, collision simulation, and richer visual quest graphs are future work. The current concept selector attaches one concept per definition; the file model supports multiple.
+
+Autosave status shows pending, saving, saved, validation errors, or retrying after a write failure. Failed writes retry with backoff (up to 30 seconds). Only one request is in flight; its acknowledgement cannot mark newer edits saved. Save callbacks update the status in place, preserving focus, selection, scroll and the reference picker. Closing the page while writes or invalid drafts are pending triggers the browser's unsaved-changes warning.
+
+## References in text
+
+Type `@` followed by an object name, or click **@ Reference** beside any authored text field. Search by name, kind, or stable ID, then choose with a click or the arrow keys and Enter. Escape closes the picker. References work in names and titles (including the project title), level briefs, concept descriptions, semantic property text, portal labels, and generation prompts. Numeric dimensions and structural instance paths retain their original formats.
+
+The persisted syntax is `[[object-id]]`. The UI previews the current object name and makes references clickable in headings, prose, and field previews. Renames update displayed names without rewriting stored references. Name-reference cycles are permitted and rendered with bounded expansion. Broken IDs are highlighted while drafting and rejected when applying or saving a project. Generation prompts resolve references to names before submission.
+
+**Find usages** includes text references, labeled with the owning object and source field; opening a result goes to the corresponding editor. Existing JSON files remain compatible; no migration is needed. Object references target reusable definitions, levels, and concepts; portal instance paths remain the mechanism for targeting a specific placed instance.
 
 ## Model and backtracing
 

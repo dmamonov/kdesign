@@ -19,14 +19,14 @@ window.designer = {
     let painting = false;
     let referenceEditor = null, referenceStart = 0, referenceEnd = 0, activeChoice = 0;
     const commitTable = editor => {
-      if(editor.dataset.tableOwner) action('table-edit',editor.id,JSON.stringify({owner:editor.dataset.tableOwner,field:editor.dataset.tableField,content:editor.value}));
+      if(editor.dataset.tableOwner && editor.dataset.tablePending==='true') {editor.dataset.tablePending='false';action('table-edit',editor.id,JSON.stringify({owner:editor.dataset.tableOwner,field:editor.dataset.tableField,content:editor.value}));}
     };
     const closeReferences = () => { document.getElementById('reference-picker')?.remove(); referenceEditor=null; };
     const chooseReference = id => {
       const editor=referenceEditor;
       if(!editor || !editor.isConnected) {closeReferences();return;}
       editor.setRangeText('[['+id+']]',referenceStart,referenceEnd,'end');
-      closeReferences(); editor.focus(); action('reference-preview',editor.id,editor.value);commitTable(editor);
+      closeReferences(); editor.focus(); action('reference-preview',editor.id,editor.value);editor.dataset.tablePending='true';commitTable(editor);if(!editor.dataset.tableOwner) action('form-edit',editor.id,editor.value);
     };
     const showChoices = query => {
       const list=document.getElementById('reference-choices'); if(!list) return;
@@ -54,8 +54,10 @@ window.designer = {
       if(searchable) picker.querySelector('input').focus();
     };
     document.addEventListener('input',e=>{
-      const editor=e.target;if(!editor.matches('[data-references]')) return;
-      action('reference-preview',editor.id,editor.value);
+      const editor=e.target;if(!editor.matches('input[id],textarea[id]')) return;
+      if(!editor.dataset.tableOwner) action('form-edit',editor.id,editor.value);
+      if(!editor.matches('[data-references]')) return;
+      action('reference-preview',editor.id,editor.value);editor.dataset.tablePending='true';commitTable(editor);
       const end=editor.selectionStart, prefix=editor.value.slice(0,end), match=prefix.match(/(?:^|\s)@([^\n@]*)$/);
       if(match) openReferences(editor,prefix.lastIndexOf('@'),end,match[1],false);else closeReferences();
     });
@@ -79,10 +81,11 @@ window.designer = {
       }
       if(e.target.closest('#reference-picker')) return;
       if(el?.dataset.action==='reference-open') e.preventDefault();
-      closeReferences();
+      const pendingEditor=referenceEditor;closeReferences();if(pendingEditor) commitTable(pendingEditor);
       if(el && !el.disabled && el.dataset.action !== 'paint') action(el.dataset.action, el.dataset.id ?? '', el.dataset.value ?? '');
     });
-    document.addEventListener('change', e => { const el=e.target; if(el.dataset.tableOwner && !document.getElementById('reference-picker')) commitTable(el); if(el.dataset.change) action(el.dataset.change,el.dataset.id??'',el.value); });
+    document.addEventListener('focusout',e=>{if(e.target.dataset.tableOwner && !document.getElementById('reference-picker')) commitTable(e.target);});
+    document.addEventListener('change', e => { const el=e.target; if(el.dataset.change) action(el.dataset.change,el.dataset.id??'',el.value);else if(el.id && el.tagName==='SELECT') action('form-edit',el.id,el.value); });
     document.addEventListener('pointerdown', e => {
       const el=e.target.closest('[data-action="paint"]');
       if(el) { e.preventDefault(); painting=true; action('stroke','',''); action('paint',el.dataset.id,''); }
@@ -92,13 +95,18 @@ window.designer = {
     document.addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey)&&e.key==='s') {e.preventDefault();action('save','','');} });
     window.addEventListener('beforeunload', e => { if(window.designer.dirty) { e.preventDefault(); e.returnValue=''; } });
   },
+  saveStatus(text, pending) {
+    window.designer.dirty=pending;
+    const status=document.querySelector('.save-state');
+    if(status) {status.textContent=text;status.setAttribute('role','status');status.setAttribute('aria-live','polite');}
+  },
   tableCellState(id, error) {
     const editor=document.getElementById(id);if(!editor) return;
     editor.setAttribute('aria-invalid',String(Boolean(error)));
     let hint=document.getElementById(id+'-error');
-    if(!hint) {hint=document.createElement('small');hint.id=id+'-error';hint.className='cell-error';hint.setAttribute('role','alert');editor.closest('.field-wrap').append(hint);}
+    if(!hint) {hint=document.createElement('small');hint.id=id+'-error';hint.className='cell-error';hint.setAttribute('role','alert');(editor.closest('.field-wrap') || editor.parentElement).append(hint);}
     hint.textContent=error;
-    if(!error) {const status=document.querySelector('.save-state');if(status) status.textContent='● Unsaved changes';}
+    if(!error) document.getElementById('action-error')?.remove();
   },
   error(message) {
     let el=document.getElementById('action-error');

@@ -87,7 +87,7 @@ val fieldLabels = listOf("Description", "Player mechanics", "Player goals", "Des
             val l = levels.find { it.id == p.targetLevelId }
             var target = l?.rootId
             p.targetPath.forEach { step -> target = blocks.find { it.id == target }?.children?.find { it.id == step }?.assetId }
-            if (target == assetId) result += Usage(null, b.id, emptyList(), "Portal reference: ${b.name} → ${p.label}")
+            if (target == assetId || p.targetLevelId == assetId) result += Usage(null, b.id, emptyList(), "Portal reference: ${b.name} → ${p.label}")
         } }
         textReferences().filter { it.targetId == assetId }.forEach { ref ->
             result += Usage(null, ref.ownerId, emptyList(), "${if(ref.ownerId.isEmpty()) displayText(title) else displayText(name(ref.ownerId))} · ${ref.field}", ref.field)
