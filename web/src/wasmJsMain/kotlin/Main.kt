@@ -31,6 +31,7 @@ var revision = 0
 var modal = ""
 var usageId = ""
 var highlightPath = emptyList<String>()
+val tableErrors = mutableSetOf<String>()
 val history = mutableListOf<Project>()
 fun esc(s: String) = s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\"","&quot;").replace("'","&#39;")
 fun attr(action: String, id: String = "", v: String = "") = "data-action='${esc(action)}' data-id='${esc(id)}' data-value='${esc(v)}'"
@@ -101,7 +102,11 @@ fun canvasView(b: Block, l: Level?): String {
     <section class='panel padded'><div class='eyebrow'>CONNECTIONS</div><h3>Doors to other places</h3>${b.portals.joinToString("") { p -> button("↗ ${text(p.label)}<small>${text(project.name(p.targetLevelId))}</small>","portal-go",p.targetLevelId,p.targetPath.joinToString("/"),"portal-link") }.ifBlank { "<p class='muted'>No outgoing portals on this definition.</p>" }}${if(b.kind=="meta") button("+ Add portal","new",v="Portal",cls="wide") else ""}</section></aside></div>"""
 }
 fun briefView(l: Level) = "<section class='panel padded'><div class='section-title'><div><h3>Level design brief</h3><p class='muted'>The intent behind the space.</p></div>${button("Apply brief","brief-save",cls="primary")}</div><div class='form-grid'>${field("title","Title",l.title)}<label class='field'>Parent level<select id='parent'><option value=''>Independent space</option>${project.levels.filter {it.id!=l.id}.joinToString(""){ "<option value='${esc(it.id)}' ${if(it.id==l.parentId) "selected" else ""}>${text(it.title)}</option>" }}</select></label>${levelFields.mapIndexed { i,k -> field(k,fieldLabels[i],l.notes[k] ?: "",true) }.joinToString("")}</div></section>"
-fun tableView() = "<section class='panel table-scroll'><table><thead><tr><th>Level / space</th>${fieldLabels.joinToString(""){"<th>$it</th>"}}</tr></thead><tbody>${project.levels.joinToString(""){ l -> "<tr><td>${button(text(l.title),"select",l.id,cls="text-link")}<small>${l.parentId?.let { "↳ ${text(project.name(it))}" } ?: "Independent space"}</small></td>${levelFields.joinToString(""){"<td>${rich(l.notes[it] ?: "—")}</td>"}}</tr>" }}</tbody></table></section>"
+fun tableView() = "<section class='panel table-scroll'><div class='panel-bar'>Level overview <small>Edit any cell · changes apply when you leave the field · Save project writes to disk</small></div><table class='editable-levels'><thead><tr><th>Level / space</th>${fieldLabels.joinToString(""){"<th>$it</th>"}}</tr></thead><tbody>${project.levels.joinToString(""){ l -> "<tr><td>${tableField(l,"title","Title",l.title)}${button("Open level →","select",l.id,cls="text-link")}<small>${l.parentId?.let { "↳ ${text(project.name(it))}" } ?: "Independent space"}</small></td>${levelFields.mapIndexed { i,k -> "<td>${tableField(l,k,fieldLabels[i],l.notes[k] ?: "")}</td>" }.joinToString("")}</tr>" }}</tbody></table></section>"
+fun tableField(level: Level, key: String, label: String, content: String): String =
+    field("table-${level.id}-$key", "${project.displayText(level.title)} · $label", content, multiline=true)
+        .replace("data-references='true'", "data-references='true' data-table-owner='${esc(level.id)}' data-table-field='$key'")
+
 fun propertiesView(): String {
     val b=currentBlock(); val t=currentTile()
     return "<section class='panel padded'><div class='section-title'><h3>Definition properties</h3>${button("Apply properties","properties-save",cls="primary")}</div>${field("name","Name", t?.name ?: b?.name ?: "")}<p class='muted'>Stable ID: ${esc(selected)}</p>" + if(b!=null) "<div class='form-grid'>${field("width","Width (pixels)",b.width.toString())}${field("height","Height (pixels)",b.height.toString())}${field("properties","Semantic properties · one key=value per line",b.properties.entries.joinToString("\n"){"${it.key}=${it.value}"},true)}<label class='field'>Linked concepts<select id='concept'><option value=''>No concept</option>${project.concepts.joinToString(""){"<option value='${esc(it.id)}' ${if(it.id in b.conceptIds) "selected" else ""}>${text(it.category)} / ${text(it.name)}</option>"}}</select><small>This first editor links one concept per definition.</small></label></div><h3>Portals</h3>${b.portals.mapIndexed { i,p -> "<div class='instance'><span>${text(p.label)} → ${text(project.name(p.targetLevelId))} / ${text(p.targetPath.joinToString("/"))}</span>${button("Remove","portal-remove",i.toString(),cls="tiny")}</div>" }.joinToString("")}</section>" else "<p class='muted'>${t?.size} × ${t?.size} pixels · NES palette · transparent background</p></section>"
@@ -129,6 +134,7 @@ fun select(id: String) {
 }
 fun save() {
     if(saving) return
+    require(tableErrors.isEmpty()) { "Correct the highlighted table cell before saving" }
     project.validate(); saving=true; val savedRevision=revision; render()
     request("PUT","/api/files?path=project.json",json.encodeToString(project)) { ok,text ->
         saving=false
@@ -188,15 +194,26 @@ fun generate() {
 fun action(kind: String, id: String, v: String) {
     try {
         when(kind) {
+            "table-edit" -> {
+                val input=json.parseToJsonElement(v).jsonObject
+                val owner=input["owner"]!!.jsonPrimitive.content
+                val key=input["field"]!!.jsonPrimitive.content
+                val content=input["content"]!!.jsonPrimitive.content
+                try {
+                    change { p -> p.copy(levels=p.levels.map { l -> if(l.id!=owner) l else if(key=="title") l.copy(title=content.trim().also {require(it.isNotBlank()) { "Level title cannot be empty" }}) else l.copy(notes=l.notes+(key to content)) }) }
+                    tableErrors.remove(id);tableCellState(id, "");publishReferenceObjects();referencePreview(id,rich(content))
+                } catch(e: Exception) { tableErrors.add(id);tableCellState(id,e.message ?: "Invalid value") }
+                return
+            }
             "reference-preview" -> { referencePreview(id,rich(v));return }
             "reference-open" -> openReference(id)
             "text-usage-open" -> openTextUsage(id,v)
             "reload" -> {load();return}
             "save" -> {save();return}
             "dismiss" -> message=""
-            "section" -> { section=id;tab=if(id=="Levels") "Canvas" else if(id=="Concepts") "Library" else "Editor";selected=when(id) {"Levels"->project.levels.firstOrNull()?.id;"Tiles"->project.tiles.firstOrNull()?.id;else->project.blocks.firstOrNull {it.kind==if(id=="Blocks") "block" else "meta"}?.id} ?: "" }
+            "section" -> { tableErrors.clear();section=id;tab=if(id=="Levels") "Canvas" else if(id=="Concepts") "Library" else "Editor";selected=when(id) {"Levels"->project.levels.firstOrNull()?.id;"Tiles"->project.tiles.firstOrNull()?.id;else->project.blocks.firstOrNull {it.kind==if(id=="Blocks") "block" else "meta"}?.id} ?: "" }
             "select", "open" -> select(id)
-            "tab" -> tab=id
+            "tab" -> {tableErrors.clear();tab=id}
             "snap" -> snap=v.toInt()
             "pencil" -> eraser=false
             "eraser" -> eraser=true

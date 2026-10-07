@@ -38,3 +38,6 @@ fun openTextUsage(id: String, field: String) {
     if(project.tiles.any {it.id==id} || project.blocks.any {it.id==id}) tab="Properties"
     message="Text reference in $field"
 }
+
+@JsFun("(id, error) => window.designer.tableCellState(id, error)")
+external fun tableCellState(id: String, error: String)
