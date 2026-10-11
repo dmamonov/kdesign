@@ -1,0 +1,114 @@
+package kdesign.web
+
+import kdesign.*
+
+val sections = listOf("Levels", "Tiles", "Blocks", "Meta blocks", "Objects") + categories.keys
+val sectionMemory = mutableMapOf<String, Pair<String, String>>()
+val expandedNodes = mutableSetOf<String>()
+var treeQuery = ""
+data class Location(val section: String, val selected: String, val tab: String,
+                    val usage: String, val path: List<String>, val query: String)
+val locations = mutableListOf<Location>()
+fun rememberLocation() {
+    locations += Location(section, selected, tab, usageId, highlightPath, treeQuery)
+    if (locations.size > 100) locations.removeAt(0)
+}
+fun switchSection(name: String) {
+    sectionMemory[section] = selected to tab
+    section = name
+    val remembered = sectionMemory[name]
+    selected = remembered?.first ?: ""
+    tab = remembered?.second ?: if(name == "Levels") "Table" else "Library"
+    treeQuery = ""
+}
+fun sectionItems(): List<String> = when(section) {
+    "Levels" -> project.levels.map { it.id }
+    "Tiles" -> project.tiles.map { it.id }
+    "Blocks" -> project.blocks.filter { it.kind == "block" }.map { it.id }
+    "Meta blocks" -> project.blocks.filter { it.kind == "meta" }.map { it.id }
+    "Objects" -> project.blocks.map { it.id }
+    else -> project.concepts.filter { it.category == section }.map { it.id }
+}
+fun createButton(): String {
+    val type = when { section in categories -> "Concepts"; section == "Objects" -> "Blocks"; else -> section }
+    val label = when(type) { "Levels" -> "level"; "Tiles" -> "tile"; "Concepts" -> "concept"; "Meta blocks" -> "meta block"; else -> "block" }
+    return button("+ New $label", "new", if(section in categories) section else "", type, "primary")
+}
+fun treeView(): String {
+    val query = treeQuery.trim().lowercase()
+    fun matches(id: String) = query.isEmpty() || project.displayText(project.name(id)).lowercase().contains(query) || id.lowercase().contains(query)
+    fun node(id: String, depth: Int, children: String, expandable: Boolean, context: String = ""): String {
+        val open = id in expandedNodes || query.isNotEmpty()
+        return "<div class='tree-row ${if(selected==id) "selected" else ""}' style='--depth:$depth'>" +
+            (if(expandable) "<button class='tree-toggle' aria-label='${if(open) "Collapse" else "Expand"} ${text(project.name(id))}' aria-expanded='$open' ${attr("tree-toggle",id)}>${if(open) "▾" else "▸"}</button>" else "<span class='tree-spacer'></span>") +
+            button("<span>${text(project.name(id))}</span>${if(context.isNotEmpty()) "<small>${text(context)}</small>" else ""}","select",id,cls="tree-label") + "</div>" + if(open) children else ""
+    }
+    fun levelNodes(parent: String?, depth: Int): String = project.levels.filter { it.parentId==parent }.joinToString("") { l ->
+        val children = levelNodes(l.id, depth+1)
+        if(!matches(l.id) && children.isEmpty()) "" else node(l.id, depth, children, project.levels.any {it.parentId==l.id}, if(l.parentId!=null) "Independent sublevel" else "Level")
+    }
+    val entries = if(section=="Levels") levelNodes(null,0) else sectionItems().filter(::matches).joinToString("") { id ->
+        val b = project.blocks.find {it.id==id}
+        val children = b?.children?.joinToString("") { c ->
+            "<div class='tree-instance' style='--depth:1'>" + button("${text(project.name(c.assetId))}<small>Instance · ${esc(c.id)} · ${c.x}, ${c.y}</small>","instance-open",id,c.id) + "</div>"
+        } ?: ""
+        node(id,0,children,!b?.children.isNullOrEmpty(),project.objectType(id))
+    }
+    return button("▤ ${text(section)}<small>Overview · ${sectionItems().size} items</small>","category-root",cls="tree-root ${if(selected.isEmpty()) "selected" else ""}") + entries.ifBlank {"<p class='empty small'>${if(query.isEmpty()) "No items yet. Create one to begin." else "No matching items."}</p>"}
+}
+fun libraryView(): String {
+    val items = sectionItems()
+    if(items.isEmpty()) return "<section class='panel empty'><h2>No ${text(section.lowercase())} yet</h2><p>Create an item to start designing.</p>${createButton()}</section>"
+    return "<div class='library-grid'>" + items.joinToString("") { id ->
+        val concept = project.concepts.find {it.id==id}
+        "<article class='panel library-card'>" + (if(concept==null) "<div class='library-art'>${svg(id)}</div>" else "<span class='tag'>${text(concept.type)}</span>") +
+            "<h3>${rich(project.name(id))}</h3><p class='muted'>${if(concept!=null) rich(concept.description) else text(project.objectType(id))}</p><div class='concept-actions'>${button("Open", "select",id)}${button("Find usages","usages",id,cls="quiet")}</div></article>"
+    } + "</div>"
+}
+fun conceptWorkspace(): String {
+    val c = project.concepts.first {it.id==selected}
+    return "<section class='panel padded'><div class='eyebrow'>${text(c.category)} · ${text(c.type)}</div>${field("new-name","Name",c.name)}${field("concept-description","Description",c.description,true)}<p class='muted'>Changes save automatically. References connect this concept to other objects.</p>${button("Change category or type","concept-edit",c.id)}</section>" +
+        "<section class='panel padded'><h3>Linked definitions</h3>" + project.blocks.filter {c.id in it.conceptIds}.joinToString("") {button(text(it.name),"open",it.id)}.ifBlank {"<p class='muted'>No linked definitions yet. Attach this concept in a block's properties.</p>"} + "</section>"
+}
+fun renderShell() {
+    if(selected.isNotEmpty() && selected !in project.objectIds()) selected=""
+    val level=currentLevel(); val block=currentBlock(); val tile=currentTile()
+    val concept=project.concepts.any {it.id==selected}
+    val root=selected.isEmpty()
+    val heading=if(root) if(section=="Levels") "Level overview" else section else project.name(selected)
+    val tabs=when {root->emptyList(); concept->listOf("Design"); level!=null->listOf("Canvas","Design brief");else->listOf("Editor","Properties")}
+    mount("""
+      <div class='app-shell'>
+      <header class='app-top'><div class='project-brand'><span class='brand-icon'>K</span><div><strong>${rich(project.title)}</strong><small>Adventure designer</small></div>${button("Edit title","new",v="Project",cls="tiny quiet")}</div><div class='header-actions'><span class='save-state' role='status'>${text(statusText())}</span>${button("↶ Undo","undo",cls="quiet")}${button("Retry / save now","save",cls="quiet")}</div></header>
+      <nav class='category-nav' aria-label='Object categories'>${sections.joinToString("") {"<button ${attr("section",it)} aria-current='${if(section==it) "page" else "false"}' class='${if(section==it) "active" else ""}'>${esc(it)}</button>"}}</nav>
+      <aside class='navigation-panel' aria-label='Category navigation'><div class='tree-heading'><span>${text(section)}</span><small>EXPLORER</small></div><label class='tree-search'>Search ${text(section.lowercase())}<input id='tree-search' value='${esc(treeQuery)}' placeholder='Search names or IDs…'></label><div class='explorer'>${treeView()}</div><div class='tree-create'>${createButton()}<small>Local project · autosave enabled</small></div></aside>
+      <main data-view='${esc(section)}:${esc(selected)}:${esc(tab)}'><div class='workspace-location'>${if(locations.isNotEmpty()) button("← Back","navigate-back",cls="tiny quiet") else ""}${button(text(section),"category-root",cls="quiet")}<span>/ ${if(root) "Overview" else text(project.name(selected))}</span></div>
+      <div class='page-heading'><div><div class='eyebrow'>${if(root) "COLLECTION" else if(level!=null) "INDEPENDENT SPACE" else "SHARED DEFINITION"}</div><h1>${rich(heading)}</h1><p>${if(root && section=="Levels") "Design every space together. Edit any cell directly." else if(section=="Objects") "Browse existing block definitions and their placed instances." else if(root) "Reusable ideas and assets for your adventure." else if(level!=null) "Compose the space and describe its purpose." else "Changes to this definition are shared across its usages."}</p></div><div class='heading-actions'>${if(!root) button("Find usages","usages",selected) else ""}</div></div>
+      ${if(message.isNotBlank()) "<div class='notice' role='status'>${text(message)}${button("Dismiss","dismiss",cls="tiny")}</div>" else ""}
+      ${if(tabs.isNotEmpty()) "<div class='tabbar'>${tabs.joinToString("") {button(when(it){"Canvas"->"Map";"Design brief"->"Design";else->it},"tab",it,cls=if(tab==it) "active" else "")}}<span>${if(tile!=null) "${tile.size} × ${tile.size} · NES PALETTE" else if(block!=null) "${block.width} × ${block.height} · ${block.children.size} PLACEMENTS" else "DESIGN CONCEPT"}</span></div>" else ""}
+      ${hotkeyConflict?.let { (asset,key) -> "<div class='notice' role='alert'><span>Key $key is assigned to ${text(project.name(project.hotkeys[key] ?: ""))}. Reassign it to ${text(project.name(asset))}?</span><div>${button("Reassign key","hotkey-confirm")}${button("Cancel","hotkey-cancel")}</div></div>" } ?: ""}
+      <div class='page-body'>${when {root && section=="Levels"->tableView();root->libraryView();concept->conceptWorkspace();tab=="Design brief" && level!=null->briefView(level);tab=="Properties"->propertiesView();tile!=null->tileView(tile);block!=null->canvasView(block,level);else->libraryView()}}</div></main></div>
+      ${if(usageId.isNotBlank()) usagesView() else ""}${if(modal.isNotBlank()) modalView() else ""}
+    """.trimIndent())
+}
+
+@JsFun("(html) => { document.querySelector('.explorer').innerHTML = html; }")
+external fun refreshTree(html: String)
+
+fun portalDestinationOptions(): String = buildString {
+    project.levels.forEach { level ->
+        fun visit(id: String, path: List<String>, names: List<String>) {
+            val block = project.blocks.find {it.id==id && it.kind=="meta"} ?: return
+            val encoded = kotlinx.serialization.json.JsonArray((listOf(level.id)+path).map {kotlinx.serialization.json.JsonPrimitive(it)}).toString()
+            append("<option value='${esc(encoded)}'>${text((listOf(level.title)+names).joinToString(" / "))}${if(path.isEmpty()) " · level root" else " · " + esc(path.joinToString(" / "))}</option>")
+            block.children.forEach {visit(it.assetId,path+it.id,names+project.name(it.assetId))}
+        }
+        visit(level.rootId,emptyList(),emptyList())
+    }
+}
+
+fun placementInspector(parent: Block): String {
+    val placement=parent.children.find {it.id==highlightPath.firstOrNull()} ?: return ""
+    val definition=project.blocks.find {it.id==placement.assetId}
+    return "<section class='panel padded selected-instance'><div class='eyebrow'>SELECTED INSTANCE</div><h3>${rich(project.name(placement.assetId))}</h3><p class='muted'>In ${text(parent.name)} · ${placement.x}, ${placement.y}</p><small>${esc(highlightPath.joinToString(" / "))}</small>${definition?.properties?.entries?.joinToString("") {"<p>${rich(it.key)}: ${rich(it.value)}</p>"} ?: ""}${button("Open shared definition","open",placement.assetId,cls="wide")}${button("Find usages","usages",placement.assetId,cls="wide")}</section>"
+}

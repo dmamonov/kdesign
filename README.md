@@ -40,6 +40,21 @@ only when you press Generate; your API account is billed for those calls.
 
 ## Workspaces
 
+The top menu switches between graphic and conceptual categories.
+The left panel contains a searchable navigation tree with independent expansion and selection.
+Selecting the Levels root opens the editable overview table.
+Switching categories restores the last selected item and workspace view.
+Back returns from definitions and reference results to the previous workspace.
+
+Objects provides another view of existing block definitions and their placed instances.
+It does not duplicate those definitions or introduce animation, sprite, room, or zone entities.
+Those model extensions remain open in [UI.md](UI.md).
+
+Use **I · Inspect** on a map to select a placed instance and open its shared definition or usages.
+Portal destinations can be selected by level and named instance path.
+Assigning an occupied block hotkey offers an explicit Reassign action.
+
+
 - **Levels:** compose a side-scrolling space from blocks, inspect placements, open portals, edit the design brief, and
   edit titles and every brief field directly in a horizontally scrolling table. Cell edits autosave while you type.
   Invalid cells show an error and retain their draft in the current editor; autosave writes only the last valid model.

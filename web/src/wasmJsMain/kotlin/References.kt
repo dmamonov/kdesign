@@ -29,15 +29,26 @@ fun openReference(id: String) {
     if(id.isEmpty()) { modal="Project"; return }
     select(id)
     project.concepts.find { it.id==id }?.let {
-        section="Concepts";tab="Library";conceptCategory=it.category;modal="Edit concept"
+        section=it.category;tab="Design";conceptCategory=it.category
     }
 }
 fun openTextUsage(id: String, field: String) {
     openReference(id)
     if(project.levels.any {it.id==id}) tab="Design brief"
     if(project.tiles.any {it.id==id} || project.blocks.any {it.id==id}) tab="Properties"
+    pendingFieldFocus=when {
+        id.isEmpty() -> "new-name"
+        project.concepts.any {it.id==id} -> if(field=="Name") "new-name" else "concept-description"
+        project.levels.any {it.id==id} -> if(field=="Title") "title" else levelFields.getOrNull(fieldLabels.indexOf(field)) ?: "title"
+        field=="Name" -> "name"
+        else -> "properties"
+    }
     message="Text reference in $field"
 }
 
 @JsFun("(id, error) => window.designer.tableCellState(id, error)")
 external fun tableCellState(id: String, error: String)
+
+var pendingFieldFocus=""
+@JsFun("(id) => { const el=document.getElementById(id); if(el) {el.focus();el.scrollIntoView({block:'center'});} }")
+external fun focusField(id: String)

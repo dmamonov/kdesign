@@ -37,7 +37,7 @@ fun save() {
 fun editForm(id: String, content: String) {
     val active = when {
         modal=="Project" -> id=="new-name"
-        modal=="Edit concept" -> id in setOf("new-name","concept-description","category","concept-type")
+        (modal=="Edit concept" || (modal.isEmpty() && section in categories)) -> id in setOf("new-name","concept-description","category","concept-type")
         modal.isNotEmpty() -> false // New-object dialogs commit via Create.
         tab=="Design brief" -> id=="title" || id=="parent" || id in levelFields
         tab=="Properties" -> id in setOf("name","width","height","properties","concept")
@@ -47,7 +47,7 @@ fun editForm(id: String, content: String) {
     try {
         change { p -> when {
             modal=="Project" -> p.copy(title=content.trim().also {require(it.isNotBlank()) {"Enter a project title"}})
-            modal=="Edit concept" -> p.copy(concepts=p.concepts.map { c -> if(c.id!=selected) c else when(id) {
+            (modal=="Edit concept" || (modal.isEmpty() && section in categories)) -> p.copy(concepts=p.concepts.map { c -> if(c.id!=selected) c else when(id) {
                 "new-name" -> c.copy(name=content.trim().also {require(it.isNotBlank()) {"Enter a name"}})
                 "concept-description" -> c.copy(description=content)
                 "category" -> c.copy(category=content,type=categories.getValue(content).first())

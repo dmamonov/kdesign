@@ -3,10 +3,23 @@ window.designer = {
   mount(html) {
     document.getElementById('reference-picker')?.remove();document.getElementById('block-picker')?.remove();
     const view=document.querySelector('main')?.dataset.view;
+    const active=document.activeElement;
+    const focus={id:active?.id,action:active?.dataset?.action,entity:active?.dataset?.id,start:active?.selectionStart,end:active?.selectionEnd};
+    const menuScroll=document.querySelector('.category-nav')?.scrollLeft || 0;
     const selectors=['.scene-scroll','.asset-list','.instances','.explorer','.table-scroll'];
     const positions=selectors.map(s=>{const el=document.querySelector(s);return el ? [el.scrollLeft,el.scrollTop] : [0,0];});
+    window.designer.viewStates ||= new Map();
+    if(view) window.designer.viewStates.set(view,{positions,scrollY:window.scrollY});
     document.getElementById('app').innerHTML = html;
-    if(view===document.querySelector('main')?.dataset.view) selectors.forEach((s,i)=>{const el=document.querySelector(s);if(el) {el.scrollLeft=positions[i][0];el.scrollTop=positions[i][1];}});
+    const menu=document.querySelector('.category-nav');if(menu) menu.scrollLeft=menuScroll;
+    const restored=window.designer.viewStates.get(document.querySelector('main')?.dataset.view);
+    if(restored) {selectors.forEach((s,i)=>{const el=document.querySelector(s);if(el) {el.scrollLeft=restored.positions[i][0];el.scrollTop=restored.positions[i][1];}});window.scrollTo(0,restored.scrollY);}
+    else window.scrollTo(0,0);
+    const dialog=document.querySelector('.overlay [role="dialog"]');
+    const shell=document.querySelector('.app-shell');if(shell) shell.inert=Boolean(dialog);
+    const target=dialog?.querySelector('input,textarea,select,button') ||
+      (focus.id ? document.getElementById(focus.id) : focus.action ? [...document.querySelectorAll('[data-action]')].find(el=>el.dataset.action===focus.action && el.dataset.id===focus.entity) : null);
+    if(target) {target.focus({preventScroll:true});if(focus.start!=null && target.setSelectionRange && target.id===focus.id) target.setSelectionRange(focus.start,focus.end);}
   },
   value(id) { return document.getElementById(id)?.value ?? ''; },
   pixel(id, color) { const el = document.getElementById(id); if(el) el.style.backgroundColor = color; },
@@ -55,7 +68,7 @@ window.designer = {
       if(searchable) picker.querySelector('input').focus();
     };
     document.addEventListener('input',e=>{
-      const editor=e.target;if(!editor.matches('input[id],textarea[id]')) return;
+      const editor=e.target;if(editor.id==='tree-search'){action('tree-search','',editor.value);return;}if(!editor.matches('input[id],textarea[id]')) return;
       if(!editor.dataset.tableOwner) action('form-edit',editor.id,editor.value);
       if(!editor.matches('[data-references]')) return;
       action('reference-preview',editor.id,editor.value);editor.dataset.tablePending='true';commitTable(editor);
@@ -93,6 +106,19 @@ window.designer = {
     });
     document.addEventListener('pointerover', e => { const el=e.target.closest('[data-action="paint"]'); if(painting && el) action('paint',el.dataset.id,''); });
     document.addEventListener('pointerup', () => { if(painting) { painting=false; action('stroke-end','',''); } });
+    document.addEventListener('keydown', e => {
+      const dialog=document.querySelector('.overlay [role="dialog"]');
+      if(dialog && e.key==='Tab') {
+        const items=[...dialog.querySelectorAll('button,input,textarea,select,a[href]')].filter(el=>!el.disabled);
+        if(items.length && ((e.shiftKey && e.target===items[0]) || (!e.shiftKey && e.target===items[items.length-1]))) {e.preventDefault();items[e.shiftKey?items.length-1:0].focus();}
+      }
+      const menu=e.target.closest('.category-nav');
+      if(menu && ['ArrowLeft','ArrowRight','Home','End'].includes(e.key)) {
+        e.preventDefault();const items=[...menu.querySelectorAll('button')],index=items.indexOf(e.target);
+        const next=e.key==='Home'?0:e.key==='End'?items.length-1:(index+(e.key==='ArrowRight'?1:-1)+items.length)%items.length;
+        items[next].focus();items[next].scrollIntoView({block:'nearest',inline:'nearest'});
+      }
+    });
     document.addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey)&&e.key==='s') {e.preventDefault();action('save','','');} });
     window.addEventListener('beforeunload', e => { if(window.designer.dirty) { e.preventDefault(); e.returnValue=''; } });
   },
