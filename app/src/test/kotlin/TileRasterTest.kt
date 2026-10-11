@@ -19,9 +19,31 @@ class TileRasterTest {
         val image=BufferedImage(80,80,BufferedImage.TYPE_INT_ARGB)
         for(y in 30..49) for(x in 20..59) image.setRGB(x,y,color(22))
         val pixels=rasterToTile(image,16)
-        assertEquals(14*7,pixels.count {it==22})
+        assertEquals(16*8,pixels.count {it==22})
         assertTrue(pixels.take(16).all {it==-1})
-        assertTrue((0..15).all {pixels[it*16]==-1 && pixels[it*16+15]==-1})
+        assertTrue((4..11).all {pixels[it*16]==22 && pixels[it*16+15]==22})
+    }
+    @Test fun paddedSquareFillsEveryTilePixel() {
+        val image=BufferedImage(80,80,BufferedImage.TYPE_INT_ARGB)
+        for(y in 20..59) for(x in 20..59) image.setRGB(x,y,color(22))
+        for(size in listOf(8,16)) {
+            assertEquals(List(size*size) {22},rasterToTile(image,size))
+        }
+    }
+    @Test fun terrainFillsBoundsAndTransparentHoles() {
+        val image=BufferedImage(64,64,BufferedImage.TYPE_INT_ARGB)
+        for(y in 4..59) for(x in 4..59) image.setRGB(x,y,color(22))
+        for(size in listOf(8,16)) assertEquals(List(size*size) {22},rasterToTile(image,size,true))
+    }
+    @Test fun filledWaterRemovesNeutralFrameAndBackdrop() {
+        val pixels=MutableList(256) {32}
+        for(y in 3..13) for(x in 2..13) pixels[y*16+x]=18
+        for(x in 3..12) pixels[3*16+x]=33
+        pixels[8*16+2]=13
+        val result=fitWaterMaterial(pixels,16)
+        assertTrue(result.all {it==18 || it==33})
+        assertTrue(result.contains(33))
+        assertEquals(List(256) {22},fitWaterMaterial(List(256) {22},16))
     }
     @Test fun ignoresInvisibleRgbAndRejectsEmptyImages() {
         val image=BufferedImage(16,16,BufferedImage.TYPE_INT_ARGB)

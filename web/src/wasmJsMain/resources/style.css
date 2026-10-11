@@ -77,3 +77,25 @@ button.danger{color:#ffb6a6;border-color:#865346}button.danger:hover{background:
 .tile-workspace .inspector .padded{padding:10px}
 .tile-workspace .inspector .field textarea{height:48px}
 .tile-workspace .preview-tile{width:32px;height:32px}
+
+.navigation-panel{padding:12px 8px}
+.tree-heading{padding:0 4px 8px;gap:6px}
+.tree-heading .tree-caption{padding:2px 0;background:none;border:0;font-size:13px;font-weight:600;color:inherit}
+.tree-heading .tree-new{padding:4px 7px;font-size:10px;white-space:nowrap}
+.tree-search{padding:0 4px 8px}
+.tree-search input{margin:0;padding:6px 8px;font-size:11px}
+.explorer{overflow-y:auto;flex:1;padding:0 2px}
+.tree-row{margin:0;min-height:30px}
+.explorer .tree-label{display:flex;align-items:center;gap:7px;padding:5px 4px;font-size:12px;flex:1}
+.tree-label>span:not(.object-icon){min-width:0;flex:1}
+.object-icon{display:inline-block;flex:none;width:16px;text-align:center;color:#a9bd9a;font-size:14px;line-height:1}
+.explorer .tree-toggle{width:16px;padding:5px 0}
+.tree-spacer{width:0}
+.tree-instance{margin-left:18px}
+.tree-instance button{display:flex;align-items:center;gap:6px;padding:4px 6px;font-size:11px;min-width:0}
+.tree-instance button>span:not(.object-icon){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.tree-instance small{margin:0 0 0 auto;white-space:nowrap;font-size:9px}
+.tree-row:focus-within{outline:0}
+.tree-label:focus-visible,.tree-toggle:focus-visible{outline:1px solid #a9bd9a;outline-offset:-1px}
+
+.generation-options{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px}

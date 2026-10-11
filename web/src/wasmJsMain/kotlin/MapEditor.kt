@@ -56,6 +56,15 @@ fun handleMapAction(kind: String,id: String,v: String): Boolean {
             if(v=="assign") {require(assetBrush.isNotBlank()) {"Choose an asset first"};assignHotkey(assetBrush,id)}
             else { val target=project.hotkeys[id] ?: return true;require(target in project.compositionAssets(currentBlock()!!.id)) {"Hotkey $id is not available for this canvas"};message="";assetBrush=target;val area=mapSelection ?: error("Select a cell or area first");change {it.fillArea(currentBlock()!!.id,target,area,snap,true,::uuid)} }
         }
+        "map-apply" -> {
+            val b=currentBlock() ?: return true
+            require(assetBrush.isNotBlank()) {"Choose a block from the palette first"}
+            val (x,y)=id.split(',').map {it.toInt()}
+            val (width,height)=project.size(assetBrush)
+            val area=MapArea(x,y,width,height)
+            change {it.fillArea(b.id,assetBrush,area,snap,true,::uuid)}
+            mapSelection=area;selectionOwner=b.id;message=""
+        }
         "map-select" -> {
             val b=currentBlock()!!;val coords=id.split(',').map {it.toInt()}
             val x=min(coords[0],coords[2]);val y=min(coords[1],coords[3])

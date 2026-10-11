@@ -58,24 +58,15 @@ fun generateTile(body: String): String {
     val description = input["description"]!!.jsonPrimitive.content
     val size = input["size"]!!.jsonPrimitive.int
     require(size in listOf(8,16) && description.length in 1..2000) { "Invalid generation request" }
+    val terrain=isTerrainTile(description,input["mode"]?.jsonPrimitive?.content ?: "auto")
     val request = buildJsonObject {
         put("model", System.getenv("OPENAI_IMAGE_MODEL")?.takeIf {it.isNotBlank()} ?: "gpt-image-1.5")
         put("size", "1024x1024")
         put("quality", "medium")
-        put("background", "transparent")
+        put("background", if(terrain) "opaque" else "transparent")
         put("output_format", "png")
         put("n", 1)
-        put("prompt", """Create one readable pixel-art sprite for a side-scrolling NES-style game.
-            Subject: $description
-            Design for a final ${size}x$size pixel tile, shown enlarged on this canvas.
-            Use a very coarse grid, large flat color clusters, a strong dark outline, and a clear silhouette.
-            Keep only the defining features that remain recognizable at ${size}x$size.
-            Use 4 to 6 coherent colors. No gradients, tiny details, text, labels, grids, or checkerboard.
-            For an object, show exactly one complete centered object, front or slight side view,
-            occupying most of the image, with transparent surroundings and no cast shadow or scenery.
-            For a requested terrain or surface tile, fill the entire square with that material.
-            Do not show a sprite sheet, multiple versions, or an illustration of a game screen.
-        """.trimIndent())
+        put("prompt", tileGenerationPrompt(description,size,terrain))
     }
     val response = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build().send(
         HttpRequest.newBuilder(URI("https://api.openai.com/v1/images/generations")).timeout(Duration.ofSeconds(240)).header("Authorization", "Bearer $key").header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(request.toString())).build(), HttpResponse.BodyHandlers.ofString())
@@ -85,7 +76,8 @@ fun generateTile(body: String): String {
         ?: error("OpenAI returned no image. Try a different description.")
     val bytes = java.util.Base64.getDecoder().decode(encoded)
     val image = javax.imageio.ImageIO.read(bytes.inputStream()) ?: error("OpenAI returned an unreadable image")
-    val pixels = rasterToTile(image, size)
+    val raster = rasterToTile(image, size, terrain)
+    val pixels = if(terrain && Regex("\\bwater\\b",RegexOption.IGNORE_CASE).containsMatchIn(description)) fitWaterMaterial(raster,size) else raster
     return buildJsonObject {
         put("name", description.trim().lineSequence().first().take(80))
         put("pixels", JsonArray(pixels.map {JsonPrimitive(it)}))

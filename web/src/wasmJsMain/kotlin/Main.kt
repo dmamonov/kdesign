@@ -24,6 +24,7 @@ var eraser = false
 var message = ""
 var generationPrompt = ""
 var generationSize = "16"
+var generationMode = "auto"
 var generating = false
 var generationAvailable = false
 var loaded = false
@@ -72,13 +73,13 @@ fun tileView(t: Tile): String = """
 <aside class='inspector'>${generationPanel()}<section class='panel padded tile-preview'><div class='eyebrow'>LIVE PREVIEW</div><div class='preview-tile'>${svg(t.id)}</div></section></aside></div>
 </div>
 """
-fun generationPanel() = """<section class='panel padded'><div class='eyebrow'>✦ GENERATE WITH OPENAI</div><h3>From an idea to pixels</h3>${field("prompt","Describe your tile", generationPrompt, true)}<label class='field'>Generated tile size<select id='generation-size'><option value='16' ${if(generationSize=="16") "selected" else ""}>16 × 16 pixels</option><option value='8' ${if(generationSize=="8") "selected" else ""}>8 × 8 pixels</option></select></label>${button(if(generating) "Generating…" else "✦ Generate tile","generate",cls="primary wide")}<p class='muted'>${if(generationAvailable) "Generates an image, then converts it to an editable NES tile. May take a few minutes. For blocks, places it in the first available cell." else "Set OPENAI_API_KEY on the server to enable generation."}</p></section>"""
+fun generationPanel() = """<section class='panel padded'><div class='eyebrow'>✦ GENERATE WITH OPENAI</div><h3>From an idea to pixels</h3>${field("prompt","Describe your tile", generationPrompt, true)}<div class='generation-options'><label class='field'>Tile size<select id='generation-size'><option value='16' ${if(generationSize=="16") "selected" else ""}>16 × 16 pixels</option><option value='8' ${if(generationSize=="8") "selected" else ""}>8 × 8 pixels</option></select></label><label class='field'>Tile style<select id='generation-mode'>${listOf("auto" to "Auto", "terrain" to "Terrain · fills tile", "sprite" to "Sprite · transparent").joinToString("") {(mode,label)->"<option value='$mode' ${if(generationMode==mode) "selected" else ""}>$label</option>"}}</select></label></div>${button(if(generating) "Generating…" else "✦ Generate tile","generate",cls="primary wide")}<p class='muted'>${if(generationAvailable) "Generates editable NES pixels. May take a few minutes." else "Set OPENAI_API_KEY on the server to enable generation."}</p></section>"""
 fun canvasView(b: Block, l: Level?): String {
     val assets=project.compositionAssets(b.id)
     if(selectionOwner!=b.id) {mapSelection=null;selectionOwner=b.id}
     if(assetBrush !in assets) assetBrush=assets.firstOrNull() ?: ""
     return """<div class='canvas-layout'><div class='canvas-main'><section class='panel'><div class='panel-bar'><span>${if(l!=null) "Level composition" else "Block composition"}<small><select class='snap-select' aria-label='Grid size' data-change='snap'><option value='16' ${if(snap==16) "selected" else ""}>16 px grid</option><option value='8' ${if(snap==8) "selected" else ""}>8 px grid</option></select></small></span>${mapToolbar()}</div>
-    <div class='scene-scroll'><div class='scene ${if(l!=null) "forest" else ""}' tabindex='0' aria-label='Map canvas' data-map-tool='$mapTool' data-width='${b.width}' data-height='${b.height}' data-snap='$snap' style='width:${maxOf(320,b.width*2)}px;height:${maxOf(320,b.width*2)*b.height/b.width}px'>${svg(b.id,b.width,b.height,true)}${if(l!=null) screenGrid(b) else ""}${selectionOverlay(b)}<div class='placement-grid' style='grid-template-columns:repeat(${(b.width+snap-1)/snap},${snap*100.0/b.width}%);grid-template-rows:repeat(${(b.height+snap-1)/snap},${snap*100.0/b.height}%)'>${(0 until (b.height+snap-1)/snap).joinToString("") { y -> (0 until (b.width+snap-1)/snap).joinToString("") { x -> "<button title='${if(mapTool=="inspect") "Inspect" else if(mapTool=="erase") "Remove" else if(mapTool=="select") "Select" else "Place ${text(project.name(assetBrush))}"} at ${x*snap},${y*snap}' aria-label='Cell $x,$y' ${attr("place","${x*snap},${y*snap}")}></button>" } }}</div></div></div><div class='panel-caption'><span>${if(mapTool=="inspect") "Inspect a placed instance" else if(mapTool=="erase") "Remove mode" else if(mapTool=="select") "Select area" else "Placing: ${text(project.name(assetBrush))}"}</span><span>Drag: select · Ctrl/⌘ C/X/V: copy/cut/paste · Space: picker · Shift + letter/digit: bind brush</span></div>${selectionBar()}</section>
+    <div class='scene-scroll'><div class='scene ${if(l!=null) "forest" else ""}' tabindex='0' aria-label='Map canvas' data-map-id='${esc(b.id)}' data-map-tool='$mapTool' data-width='${b.width}' data-height='${b.height}' data-snap='$snap' style='width:${maxOf(320,b.width*2)}px;height:${maxOf(320,b.width*2)*b.height/b.width}px'>${svg(b.id,b.width,b.height,true)}${if(l!=null) screenGrid(b) else ""}${selectionOverlay(b)}<div class='placement-grid' style='grid-template-columns:repeat(${(b.width+snap-1)/snap},${snap*100.0/b.width}%);grid-template-rows:repeat(${(b.height+snap-1)/snap},${snap*100.0/b.height}%)'>${(0 until (b.height+snap-1)/snap).joinToString("") { y -> (0 until (b.width+snap-1)/snap).joinToString("") { x -> "<button title='${if(mapTool=="inspect") "Inspect" else if(mapTool=="erase") "Remove" else if(mapTool=="select") "Select" else "Place ${text(project.name(assetBrush))}"} at ${x*snap},${y*snap}' aria-label='Cell $x,$y' ${attr("place","${x*snap},${y*snap}")}></button>" } }}</div></div></div><div class='panel-caption'><span>${if(mapTool=="inspect") "Inspect a placed instance" else if(mapTool=="erase") "Remove mode" else if(mapTool=="select") "Select area" else "Placing: ${text(project.name(assetBrush))}"}</span><span>Double-click: place · Drag: select · Ctrl/⌘ C/X/V: copy/cut/paste · Space: picker · Shift + letter/digit: bind brush</span></div>${selectionBar()}</section>
     </div><aside class='panel asset-tray'><div class='panel-bar'>${if(b.kind=="block") "TILE PALETTE" else "BLOCK PALETTE"}<small>Shared definitions</small></div><div class='asset-list'>${assets.joinToString("") { mapAssetCard(it) }}</div></aside>
     </div>"""
 }
@@ -103,7 +104,7 @@ fun modalView(): String {
         "Project" -> field("new-name","Project title",project.title)
         "Portal" -> field("new-name","Portal label","Enter passage") + "<label class='field'>Destination space and instance<select id='portal-destination'>${portalDestinationOptions()}</select></label><p class='muted'>Choose a level root or a named meta-block occurrence. Paths distinguish repeated instances.</p>"
         "Concepts", "Edit concept" -> field("new-name","Name",concept?.takeIf {modal=="Edit concept"}?.name ?: "") + "<label class='field'>Category<select id='category' data-change='category'>${categories.keys.joinToString(""){ "<option ${if(it==(if(modal=="Edit concept") concept?.category else conceptCategory)) "selected" else ""}>${text(it)}</option>" }}</select></label><label class='field'>Type<select id='concept-type'>${categories[conceptCategory]!!.joinToString(""){"<option ${if(it==concept?.type) "selected" else ""}>${text(it)}</option>"}}</select></label>"+field("concept-description","Description",concept?.takeIf {modal=="Edit concept"}?.description ?: "",true)
-        else -> field("new-name","Name") + when(modal) { "Tiles"->"<label class='field'>Tile size<select id='new-size'><option value='16'>16 × 16 pixels</option><option value='8'>8 × 8 pixels</option></select></label>"; else -> "<div class='form-grid'>${field("new-width","Width (pixels)",if(modal=="Levels") screenWidth.toString() else "32")}${field("new-height","Height (pixels)",if(modal=="Levels") screenHeight.toString() else "32")}</div>" } + if(modal=="Levels") "<label class='field'>Parent level<select id='new-parent'><option value=''>Independent space</option>${project.levels.joinToString(""){"<option value='${esc(it.id)}'>${text(it.title)}</option>"}}</select></label>" else ""
+        else -> field("new-name","Name") + when(modal) { "Tiles"->"<label class='field'>Tile size<select id='new-size'><option value='16'>16 × 16 pixels</option><option value='8'>8 × 8 pixels</option></select></label>"; else -> "<div class='form-grid'>${field("new-width","Width (pixels)",if(modal=="Levels") screenWidth.toString() else "16")}${field("new-height","Height (pixels)",if(modal=="Levels") screenHeight.toString() else "16")}</div>" } + if(modal=="Levels") "<label class='field'>Parent level<select id='new-parent'><option value=''>Independent space</option>${project.levels.joinToString(""){"<option value='${esc(it.id)}'>${text(it.title)}</option>"}}</select></label>" else ""
     } + "<div class='dialog-actions'>${if(modal in listOf("Edit concept","Project")) button("Done","close-modal",cls="primary") else button("Cancel","close-modal")+button("Create","create",cls="primary")}</div></section></div>"
 }
 var conceptCategory = "Gates"
@@ -137,7 +138,7 @@ fun create() {
             val tile=Tile(id,name,size)
             change {it.addTileWithBlock(tile,uuid(),uuid())};select(id);modal=""
             generationPrompt=name;generationSize=size.toString()
-            if(generationAvailable) generate(tile,name) else message="Tile and block created. Automatic generation needs OPENAI_API_KEY on the server."
+            if(generationAvailable) generate(tile,name,"auto") else message="Tile and block created. Automatic generation needs OPENAI_API_KEY on the server."
         }
         "Blocks", "Meta blocks", "Levels" -> {
             val b=Block(id,name,if(modal=="Blocks") "block" else "meta",value("new-width").toInt(),value("new-height").toInt())
@@ -149,13 +150,13 @@ fun create() {
     }
     modal=""
 }
-fun generate(existing: Tile? = currentTile(), description: String? = null) {
+fun generate(existing: Tile? = currentTile(), description: String? = null, mode: String = generationMode) {
     if(generating) return
     require(generationAvailable) { "Generation needs OPENAI_API_KEY. Set it in the server environment and restart." }
     val prompt=project.displayText(description ?: value("prompt")); require(prompt.isNotBlank()) {"Describe the tile you want to generate"}
     val targetBlock=currentBlock()?.takeIf {it.kind=="block"}; val size=existing?.size ?: value("generation-size").toIntOrNull() ?: 16
     generating=true; message="Generating editable pixels…"; render()
-    request("POST","/api/generate",buildJsonObject {put("description",prompt);put("size",size)}.toString()) {ok,text ->
+    request("POST","/api/generate",buildJsonObject {put("description",prompt);put("size",size);put("mode",mode)}.toString()) {ok,text ->
         generating=false
         try {
             check(ok) {runCatching {json.parseToJsonElement(text).jsonObject["error"]?.jsonPrimitive?.content}.getOrNull() ?: "Generation request failed. Check the server connection."}; val obj=json.parseToJsonElement(text).jsonObject

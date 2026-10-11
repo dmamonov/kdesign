@@ -5,7 +5,7 @@ import java.awt.image.BufferedImage
 import kotlin.math.*
 
 /** Reduce an image spatially, preserving aspect ratio and alpha, then map to the NES palette. */
-fun rasterToTile(image: BufferedImage, size: Int): List<Int> {
+fun rasterToTile(image: BufferedImage, size: Int, terrain: Boolean = false): List<Int> {
     require(size in listOf(8, 16))
     var left=image.width; var top=image.height; var right=-1; var bottom=-1
     for(y in 0 until image.height) for(x in 0 until image.width) {
@@ -14,11 +14,10 @@ fun rasterToTile(image: BufferedImage, size: Int): List<Int> {
         }
     }
     require(right>=left && bottom>=top) { "Generated image was empty. Try a more specific description." }
+    if(terrain) {left=0;top=0;right=image.width-1;bottom=image.height-1}
     val width=right-left+1; val height=bottom-top+1
-    val fullBleed=left==0 && top==0 && right==image.width-1 && bottom==image.height-1
-    val available=if(fullBleed) size else size-2
-    val scale=available.toDouble()/max(width,height)
-    val outWidth=max(1,(width*scale).roundToInt()); val outHeight=max(1,(height*scale).roundToInt())
+    val scale=size.toDouble()/max(width,height)
+    val outWidth=if(terrain) size else max(1,(width*scale).roundToInt()); val outHeight=if(terrain) size else max(1,(height*scale).roundToInt())
     val offsetX=(size-outWidth)/2; val offsetY=(size-outHeight)/2
     val colors=palette.map {it.removePrefix("#").toInt(16)}
     fun nearest(r: Double,g: Double,b: Double)=colors.indices.minBy { i ->
@@ -37,5 +36,35 @@ fun rasterToTile(image: BufferedImage, size: Int): List<Int> {
         if(alpha/samples>=0.4) pixels[(y+offsetY)*size+x+offsetX]=nearest(r/alpha,g/alpha,b/alpha)
     }
     require(pixels.any {it>=0}) {"Generated image has no visible pixels at this tile size."}
+    if(terrain) {
+        val visible=pixels.indices.filter {pixels[it]>=0}
+        for(i in pixels.indices) if(pixels[i]<0) {
+            val nearest=visible.minBy {j -> (i%size-j%size).toDouble().pow(2)+(i/size-j/size).toDouble().pow(2)}
+            pixels[i]=pixels[nearest]
+        }
+    }
     return pixels
+}
+
+/** Filled blue water must be material, not a blue object on a neutral backdrop. */
+fun fitWaterMaterial(pixels: List<Int>, size: Int): List<Int> {
+    fun water(index: Int): Boolean {
+        if(index<0) return false
+        val rgb=palette[index].drop(1).toInt(16)
+        val r=rgb shr 16 and 255;val g=rgb shr 8 and 255;val b=rgb and 255
+        return b>r+25 && b>=g && b>70
+    }
+    val material=pixels.indices.filter {water(pixels[it])}
+    // Leave intentionally unusual water colors alone.
+    if(material.size<pixels.size/4) return pixels
+    val left=material.minOf {it%size};val right=material.maxOf {it%size}
+    val top=material.minOf {it/size};val bottom=material.maxOf {it/size}
+    return List(size*size) {i ->
+        val x=left+(i%size)*(right-left+1)/size
+        val y=top+(i/size)*(bottom-top+1)/size
+        val at=y*size+x
+        if(water(pixels[at])) pixels[at] else pixels[material.minBy {
+            (it%size-x)*(it%size-x)+(it/size-y)*(it/size-y)
+        }]
+    }
 }

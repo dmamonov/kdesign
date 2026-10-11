@@ -29,32 +29,46 @@ fun sectionItems(): List<String> = when(section) {
     "Objects" -> project.blocks.map { it.id }
     else -> project.concepts.filter { it.category == section }.map { it.id }
 }
-fun createButton(): String {
+fun createButton(compact: Boolean = false): String {
     val type = when { section in categories -> "Concepts"; section == "Objects" -> "Blocks"; else -> section }
     val label = when(type) { "Levels" -> "level"; "Tiles" -> "tile"; "Concepts" -> "concept"; "Meta blocks" -> "meta block"; else -> "block" }
-    return button("+ New $label", "new", if(section in categories) section else "", type, "primary")
+    return button("+ New $label", "new", if(section in categories) section else "", type, if(compact) "primary tiny tree-new" else "primary")
+}
+fun objectIcon(id: String): String {
+    val symbol=when {
+        project.tiles.any {it.id==id} -> "▦"
+        project.levels.any {it.id==id} -> "⚑"
+        project.blocks.any {it.id==id && it.kind=="meta"} -> "▧"
+        project.blocks.any {it.id==id} -> "▣"
+        else -> when(project.concepts.find {it.id==id}?.category) {
+            "Gates" -> "⊣"; "Mechanics" -> "⚙"; "Switches" -> "⏻"
+            "Quests" -> "◆"; "Puzzles" -> "◇"; "Inventory objects" -> "⌑"
+            else -> "⌖"
+        }
+    }
+    return "<span class='object-icon' role='img' aria-label='${text(project.objectType(id))}' title='${text(project.objectType(id))}'>$symbol</span>"
 }
 fun treeView(): String {
     val query = treeQuery.trim().lowercase()
     fun matches(id: String) = query.isEmpty() || project.displayText(project.name(id)).lowercase().contains(query) || id.lowercase().contains(query)
-    fun node(id: String, depth: Int, children: String, expandable: Boolean, context: String = ""): String {
+    fun node(id: String, depth: Int, children: String, expandable: Boolean): String {
         val open = id in expandedNodes || query.isNotEmpty()
         return "<div class='tree-row ${if(selected==id) "selected" else ""}' style='--depth:$depth'>" +
             (if(expandable) "<button class='tree-toggle' aria-label='${if(open) "Collapse" else "Expand"} ${text(project.name(id))}' aria-expanded='$open' ${attr("tree-toggle",id)}>${if(open) "▾" else "▸"}</button>" else "<span class='tree-spacer'></span>") +
-            button("<span>${text(project.name(id))}</span>${if(context.isNotEmpty()) "<small>${text(context)}</small>" else ""}","select",id,cls="tree-label") + "</div>" + if(open) children else ""
+            button("${objectIcon(id)}<span>${text(project.name(id))}</span>","select",id,cls="tree-label") + "</div>" + if(open) children else ""
     }
     fun levelNodes(parent: String?, depth: Int): String = project.levels.filter { it.parentId==parent }.joinToString("") { l ->
         val children = levelNodes(l.id, depth+1)
-        if(!matches(l.id) && children.isEmpty()) "" else node(l.id, depth, children, project.levels.any {it.parentId==l.id}, if(l.parentId!=null) "Independent sublevel" else "Level")
+        if(!matches(l.id) && children.isEmpty()) "" else node(l.id, depth, children, project.levels.any {it.parentId==l.id})
     }
     val entries = if(section=="Levels") levelNodes(null,0) else sectionItems().filter(::matches).joinToString("") { id ->
         val b = project.blocks.find {it.id==id}
         val children = b?.children?.joinToString("") { c ->
-            "<div class='tree-instance' style='--depth:1'>" + button("${text(project.name(c.assetId))}<small>Instance · ${esc(c.id)} · ${c.x}, ${c.y}</small>","instance-open",id,c.id) + "</div>"
+            "<div class='tree-instance' style='--depth:1'>" + button("${objectIcon(c.assetId)}<span>${text(project.name(c.assetId))}</span><small>${c.x},${c.y}</small>","instance-open",id,c.id) + "</div>"
         } ?: ""
-        node(id,0,children,!b?.children.isNullOrEmpty(),project.objectType(id))
+        node(id,0,children,!b?.children.isNullOrEmpty())
     }
-    return button("▤ ${text(section)}<small>Overview · ${sectionItems().size} items</small>","category-root",cls="tree-root ${if(selected.isEmpty()) "selected" else ""}") + entries.ifBlank {"<p class='empty small'>${if(query.isEmpty()) "No items yet. Create one to begin." else "No matching items."}</p>"}
+    return entries.ifBlank {"<p class='empty small'>${if(query.isEmpty()) "No items yet. Create one to begin." else "No matching items."}</p>"}
 }
 fun libraryView(): String {
     val items = sectionItems()
@@ -80,7 +94,7 @@ fun renderShell() {
       <div class='app-shell'>
       <header class='app-top'><div class='project-brand'><span class='brand-icon'>K</span><div><strong>${rich(project.title)}</strong><small>Adventure designer</small></div>${button("Edit title","new",v="Project",cls="tiny quiet")}</div><div class='header-actions'><span class='save-state' role='status'>${text(statusText())}</span>${button("↶ Undo","undo",cls="quiet")}${button("Retry / save now","save",cls="quiet")}</div></header>
       <nav class='category-nav' aria-label='Object categories'>${sections.joinToString("") {"<button ${attr("section",it)} aria-current='${if(section==it) "page" else "false"}' class='${if(section==it) "active" else ""}'>${esc(it)}</button>"}}</nav>
-      <aside class='navigation-panel' aria-label='Category navigation'><div class='tree-heading'><span>${text(section)}</span><small>EXPLORER</small></div><label class='tree-search'>Search ${text(section.lowercase())}<input id='tree-search' value='${esc(treeQuery)}' placeholder='Search names or IDs…'></label><div class='explorer'>${treeView()}</div><div class='tree-create'>${createButton()}<small>Local project · autosave enabled</small></div></aside>
+      <aside class='navigation-panel' aria-label='Category navigation'><div class='tree-heading'>${button(text(section),"category-root",cls="tree-caption")}${createButton(true)}</div><div class='tree-search'><input id='tree-search' aria-label='Search ${text(section.lowercase())}' value='${esc(treeQuery)}' placeholder='Search'></div><div class='explorer'>${treeView()}</div></aside>
       <main data-view='${esc(section)}:${esc(selected)}:${esc(tab)}'>
       ${if(locations.isNotEmpty() || !root) "<div class='workspace-location'>${if(locations.isNotEmpty()) button("← Back","navigate-back",cls="tiny quiet") else ""}${if(!root) button("Find usages","usages",selected,cls="quiet")+button("Delete","delete-request",selected,cls="quiet danger") else ""}</div>" else ""}
       ${if(message.isNotBlank()) "<div class='notice' role='status'>${text(message)}${button("Dismiss","dismiss",cls="tiny")}</div>" else ""}

@@ -27,7 +27,7 @@ val fieldLabels = listOf("Description", "Player mechanics", "Player goals", "Des
 @Serializable data class Placement(val id: String, val assetId: String, val x: Int, val y: Int)
 // A portal points to an instance inside a level, not merely its reusable definition.
 @Serializable data class Portal(val label: String, val targetLevelId: String, val targetPath: List<String> = emptyList())
-@Serializable data class Block(val id: String, val name: String, val kind: String = "block", val width: Int = 32, val height: Int = 32, val children: List<Placement> = emptyList(), val properties: Map<String, String> = emptyMap(), val conceptIds: List<String> = emptyList(), val portals: List<Portal> = emptyList())
+@Serializable data class Block(val id: String, val name: String, val kind: String = "block", val width: Int = 16, val height: Int = 16, val children: List<Placement> = emptyList(), val properties: Map<String, String> = emptyMap(), val conceptIds: List<String> = emptyList(), val portals: List<Portal> = emptyList())
 @Serializable data class Level(val id: String, val title: String, val rootId: String, val parentId: String? = null, val notes: Map<String, String> = emptyMap())
 @Serializable data class Concept(val id: String, val name: String, val category: String, val type: String, val description: String = "")
 @Serializable data class Project(val version: Int = 1, val title: String = "Moss & Ember", val tiles: List<Tile> = emptyList(), val blocks: List<Block> = emptyList(), val levels: List<Level> = emptyList(), val concepts: List<Concept> = emptyList(), val hotkeys: Map<String, String> = emptyMap()) {

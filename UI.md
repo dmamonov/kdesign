@@ -427,3 +427,25 @@ Apply generated pixels to the original tile so its block and usages update toget
 Keep the tile and block editable if generation fails, and allow retry from the tile editor.
 Do not overwrite pixels edited while generation was pending or recreate a deleted tile.
 Generating a new tile from a block editor also creates its matching reusable block.
+
+New blocks and meta blocks default to 16 × 16 pixels.
+
+## Compact navigation panel
+
+Show object types with Unicode icons beside single-line names, with accessible type labels.
+Remove repeated type subtitles and the overview/count card.
+Use tightly spaced rows and a search input whose placeholder is Search.
+Place a small New action beside the category caption instead of the Explorer label.
+Click the category caption to return to its overview.
+Do not repeat the creation button or autosave status at the bottom of this panel.
+
+Generation offers Auto, Terrain, and Sprite styles.
+Auto recognizes common terrain descriptions such as water, ground, walls, and lava.
+Terrain fills the complete tile with opaque material and requests no enclosing outline.
+Water surface highlights belong at the top, with liquid extending to the sides and bottom.
+Sprite mode preserves transparency around standalone objects.
+
+Double-click a map cell to place the currently selected asset at that cell's origin.
+Use its full dimensions and the same replacement rules as hotkey fills.
+Single-click selects a cell and dragging selects an area without placing anything.
+Double-click placement autosaves and is one undoable edit.
