@@ -2970,6 +2970,42 @@
                     "assetId": "aa83210e-6a71-49d3-a747-f62ce0eec6cb",
                     "x": 128,
                     "y": 112
+                },
+                {
+                    "id": "90dcfcf6-8d3f-4fd6-bc0a-0c0661172adb",
+                    "assetId": "block-grass",
+                    "x": 416,
+                    "y": 112
+                },
+                {
+                    "id": "fadc0c32-d17b-44c5-8c54-48427f6501f2",
+                    "assetId": "block-grass",
+                    "x": 432,
+                    "y": 112
+                },
+                {
+                    "id": "9704a4bc-96b3-47f3-9cf6-02e70e6326c1",
+                    "assetId": "block-grass",
+                    "x": 448,
+                    "y": 112
+                },
+                {
+                    "id": "448144ef-cd28-4163-a6cb-05eb22e58dfe",
+                    "assetId": "block-grass",
+                    "x": 464,
+                    "y": 112
+                },
+                {
+                    "id": "0d6a1c58-fbf9-40af-85d5-200c0f6d64e2",
+                    "assetId": "block-grass",
+                    "x": 480,
+                    "y": 112
+                },
+                {
+                    "id": "738f8758-3ad8-4280-b55d-eb406939571e",
+                    "assetId": "block-grass",
+                    "x": 496,
+                    "y": 112
                 }
             ],
             "properties": {},
