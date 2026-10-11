@@ -2330,18 +2330,6 @@
                     "y": 176
                 },
                 {
-                    "id": "earth-9",
-                    "assetId": "block-stone",
-                    "x": 144,
-                    "y": 176
-                },
-                {
-                    "id": "earth-10",
-                    "assetId": "block-stone",
-                    "x": 160,
-                    "y": 176
-                },
-                {
                     "id": "ground-11",
                     "assetId": "block-grass",
                     "x": 176,
@@ -2612,12 +2600,6 @@
                     "y": 112
                 },
                 {
-                    "id": "platform-8",
-                    "assetId": "block-grass",
-                    "x": 128,
-                    "y": 112
-                },
-                {
                     "id": "platform-14",
                     "assetId": "block-grass",
                     "x": 224,
@@ -2660,24 +2642,6 @@
                     "y": 112
                 },
                 {
-                    "id": "mushroom-0",
-                    "assetId": "block-mushroom",
-                    "x": 48,
-                    "y": 144
-                },
-                {
-                    "id": "mushroom-1",
-                    "assetId": "block-mushroom",
-                    "x": 112,
-                    "y": 96
-                },
-                {
-                    "id": "mushroom-3",
-                    "assetId": "block-mushroom",
-                    "x": 336,
-                    "y": 144
-                },
-                {
                     "id": "mushroom-4",
                     "assetId": "block-mushroom",
                     "x": 448,
@@ -2688,36 +2652,6 @@
                     "assetId": "meta-entrance",
                     "x": 448,
                     "y": 144
-                },
-                {
-                    "id": "5ac39fb9-eabc-45a5-b86d-b608c85e9a7e",
-                    "assetId": "block-mushroom",
-                    "x": 256,
-                    "y": 64
-                },
-                {
-                    "id": "b54df35e-b299-4894-9692-545e36ab6ced",
-                    "assetId": "block-mushroom",
-                    "x": 224,
-                    "y": 64
-                },
-                {
-                    "id": "a30f9924-b223-45a2-9e3e-117c409c0d1f",
-                    "assetId": "block-mushroom",
-                    "x": 352,
-                    "y": 64
-                },
-                {
-                    "id": "8da8831b-ca84-4806-86b7-bc100fe8fa61",
-                    "assetId": "block-mushroom",
-                    "x": 320,
-                    "y": 64
-                },
-                {
-                    "id": "1c37f103-7de7-4988-83b1-55366fa300a0",
-                    "assetId": "block-mushroom",
-                    "x": 320,
-                    "y": 64
                 },
                 {
                     "id": "7d76b4da-2099-4d61-8371-51bd33824305",
@@ -2948,75 +2882,9 @@
                     "y": 0
                 },
                 {
-                    "id": "d2ec515b-dd79-4cbf-a7ce-b4c079a83a61",
-                    "assetId": "block-mushroom",
-                    "x": 64,
-                    "y": 16
-                },
-                {
-                    "id": "cb6e78b2-7449-45ca-a335-c3eb69256118",
-                    "assetId": "block-mushroom",
-                    "x": 80,
-                    "y": 16
-                },
-                {
-                    "id": "3ff3ed0a-ef9c-4432-abe8-81a39834176f",
-                    "assetId": "block-mushroom",
-                    "x": 96,
-                    "y": 16
-                },
-                {
-                    "id": "eef6eb22-7d92-4af4-9b49-b2db87c304df",
-                    "assetId": "block-mushroom",
-                    "x": 112,
-                    "y": 16
-                },
-                {
-                    "id": "45442932-a43a-4dfc-86a7-1f256c4ce574",
-                    "assetId": "block-mushroom",
-                    "x": 64,
-                    "y": 32
-                },
-                {
-                    "id": "cd49083c-e1d4-4491-beb9-e0bed67f81e5",
-                    "assetId": "block-mushroom",
-                    "x": 80,
-                    "y": 32
-                },
-                {
-                    "id": "b3475b0c-a687-4e87-b427-b87b7780c87c",
-                    "assetId": "block-mushroom",
-                    "x": 96,
-                    "y": 32
-                },
-                {
-                    "id": "c3a923da-4a24-49f7-ae2c-d6574a39248e",
-                    "assetId": "block-mushroom",
-                    "x": 112,
-                    "y": 32
-                },
-                {
                     "id": "91ae7749-84a4-4898-9943-26f405c2772f",
                     "assetId": "block-mushroom",
                     "x": 64,
-                    "y": 48
-                },
-                {
-                    "id": "5705b68f-fb26-470b-b220-9bbbfa34b661",
-                    "assetId": "block-mushroom",
-                    "x": 80,
-                    "y": 48
-                },
-                {
-                    "id": "5a21c7b0-a420-4e9e-8f21-7cf6925d2184",
-                    "assetId": "block-mushroom",
-                    "x": 96,
-                    "y": 48
-                },
-                {
-                    "id": "26a0c649-cdb4-41be-9be2-22fadb038e53",
-                    "assetId": "block-mushroom",
-                    "x": 96,
                     "y": 48
                 },
                 {
@@ -3060,6 +2928,48 @@
                     "assetId": "aa83210e-6a71-49d3-a747-f62ce0eec6cb",
                     "x": 144,
                     "y": 96
+                },
+                {
+                    "id": "91b8d05f-55a2-4c72-baf3-c08266cb2bd7",
+                    "assetId": "d453e6c2-a185-494e-81ea-2416ee25d016",
+                    "x": 208,
+                    "y": 64
+                },
+                {
+                    "id": "f0165655-d979-4d16-be5a-e013fc4cb2d1",
+                    "assetId": "meta-entrance",
+                    "x": 192,
+                    "y": 96
+                },
+                {
+                    "id": "3efb25f0-0744-4e3e-b08a-b9d4dc4c2fcd",
+                    "assetId": "02287f7f-be02-425e-9124-c7cd51a5fa0f",
+                    "x": 144,
+                    "y": 176
+                },
+                {
+                    "id": "d16c7ce5-cc1c-4f2c-bb73-7ce94de4fccc",
+                    "assetId": "02287f7f-be02-425e-9124-c7cd51a5fa0f",
+                    "x": 160,
+                    "y": 176
+                },
+                {
+                    "id": "2fd6646b-a7d9-4fc5-b30e-07af49a19fd2",
+                    "assetId": "aa83210e-6a71-49d3-a747-f62ce0eec6cb",
+                    "x": 128,
+                    "y": 144
+                },
+                {
+                    "id": "7c99efe4-e523-4071-862f-a690e8b34500",
+                    "assetId": "aa83210e-6a71-49d3-a747-f62ce0eec6cb",
+                    "x": 128,
+                    "y": 128
+                },
+                {
+                    "id": "51802b61-d154-4fa4-9c47-1c5ff9cc0c87",
+                    "assetId": "aa83210e-6a71-49d3-a747-f62ce0eec6cb",
+                    "x": 128,
+                    "y": 112
                 }
             ],
             "properties": {},

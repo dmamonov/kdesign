@@ -449,3 +449,6 @@ Double-click a map cell to place the currently selected asset at that cell's ori
 Use its full dimensions and the same replacement rules as hotkey fills.
 Single-click selects a cell and dragging selects an area without placing anything.
 Double-click placement autosaves and is one undoable edit.
+
+Space fills the selected cell or area with the current block.
+Enter opens the block picker; right-click also opens it.

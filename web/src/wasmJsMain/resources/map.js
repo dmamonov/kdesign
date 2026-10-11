@@ -60,8 +60,9 @@ window.designer.bindMap = action => {
     }
     if(/^[a-z0-9]$/i.test(e.key)){e.preventDefault();action('map-key',e.key.toLowerCase(),e.shiftKey?'assign':'');return;}
     const key=e.key.toLowerCase();
-    if(key===' ' && e.target.closest('button') && !e.target.closest('.scene'))return;
-    if(key===' '){e.preventDefault();if(document.getElementById('block-picker'))action('radial-close','','');else action('radial-open',(window.designer.mapPointer||[]).join(','),'');}
+    if((key===' '||key==='enter') && e.target.closest('button') && !e.target.closest('.scene'))return;
+    if(key===' '){e.preventDefault();if(!document.getElementById('block-picker'))action('fill-area','','');}
+    else if(key==='enter'){e.preventDefault();if(document.getElementById('block-picker'))action('radial-close','','');else action('radial-open',(window.designer.mapPointer||[]).join(','),'');}
     else if(key==='escape'){e.preventDefault();if(document.getElementById('block-picker'))action('radial-close','','');else action('deselect','','');}
     else if(key==='delete'||key==='backspace'){e.preventDefault();action('clear-area','','');}
   });
