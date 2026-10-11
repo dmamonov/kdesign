@@ -31,19 +31,10 @@ Saving should not require a separate manual action after each edit.
 
 The graphics model has four main layers:
 
-```text
-Tile
-  Smallest graphic primitive
-
-Block
-  Sparse combination of tiles, with semantics and properties
-
-Meta block
-  Combination of blocks or other meta blocks
-
-Level
-  Independent space containing a top-level meta block
-```
+- **Tile** - Smallest graphic primitive
+- **Block** - Sparse combination of tiles, with semantics and properties
+- **Meta block** - Combination of blocks or other meta blocks
+- **Level** - Independent space containing a top-level meta block
 
 ### Tiles
 
@@ -91,9 +82,9 @@ The design must represent both the level hierarchy and connections between space
 A cave can be a sublevel of an outdoor level while retaining its own space.
 A door reference can connect the outdoor level to the cave entrance.
 
-## Identity and backtracing
+## Identity and backtracking
 
-Backtracing is a core model requirement.
+Backtracking is a core model requirement.
 It must be considered whenever a new kind of object or reference is introduced.
 
 Given a definition, the designer must be able to navigate to all of its usages across all levels.
@@ -176,17 +167,17 @@ No specific subcategories have been requested yet.
 
 Each level defines the following information:
 
-| Field | Content |
-| --- | --- |
-| Title | The level's title |
-| Description | A description of the level |
-| Player mechanics | Mechanics available to or used by the player |
-| Player goals | What the player aims to accomplish |
-| Design goals | What the designer intends the level to achieve |
-| Emotional baits | Intended emotional draws for the player |
-| Characters encountered | Characters encountered in the level |
-| Enemies encountered | Enemies encountered in the level |
-| Objects encountered | Objects encountered in the level |
+| Field                  | Content                                        |
+|------------------------|------------------------------------------------|
+| Title                  | The level's title                              |
+| Description            | A description of the level                     |
+| Player mechanics       | Mechanics available to or used by the player   |
+| Player goals           | What the player aims to accomplish             |
+| Design goals           | What the designer intends the level to achieve |
+| Emotional baits        | Intended emotional draws for the player        |
+| Characters encountered | Characters encountered in the level            |
+| Enemies encountered    | Enemies encountered in the level               |
+| Objects encountered    | Objects encountered in the level               |
 
 Display this information in a level overview table.
 Use one row per level and columns for the level's design fields.
