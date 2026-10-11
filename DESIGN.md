@@ -3,10 +3,9 @@
 Kdesign is a local authoring tool for side-scrolling 2D action adventures.
 It combines high-level game design notes with basic pixel art and spatial composition.
 The primary output is a structured project that can be inspected, reused, and versioned on disk.
-It is not currently a playable game engine.
+> It is not a playable game engine.
 
 This document describes the implemented design and its constraints.
-Future directions are listed separately.
 See [README.md](README.md) for setup and commands.
 
 ## Design principles
@@ -15,6 +14,9 @@ See [README.md](README.md) for setup and commands.
   Store the project under `data/`, with a small server providing read, write, and directory-list
   operations.
   No database is required.
+> Every object must have an UUID identity and in all references this identity should be used. 
+> So then there should be a way to trace all object references everywhere. 
+> Please extract persistent model design into a separate document from this section.
 - **Reuse preserves identity.**
   Place references to definitions instead of copying their contents.
   Changing a mushroom definition changes every occurrence of that mushroom.
@@ -23,6 +25,8 @@ See [README.md](README.md) for setup and commands.
   including occurrences nested across levels.
 - **Text participates in the graph.**
   Titles and other authored text can refer to objects by stable ID.
+> All text fields represents rich content, which can reference other objects by their identity. 
+> Show example of display and data model.
 - **Valid edits save automatically.**
   Keep invalid drafts visible without replacing the last valid project.
   Make save failures and pending work visible.
