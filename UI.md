@@ -17,13 +17,13 @@ They can appear beside the editor without replacing the category menu or navigat
 
 ```text
 +--------------------------------------------------------------------------------------+
-| Project                 Category menu                               Autosave status  |
+| Project                 Category menu items                         Autosave status  |
 +---------------------+----------------------------------------------------------------+
-| Navigation tree     | Breadcrumbs / selected item title                               |
+| Navigation tree     | Breadcrumbs / selected item title                              |
 |                     | Workspace views and contextual actions                         |
 | Search              +-------------------------------------------+--------------------+
 | Category root       |                                           |                    |
-|   Item              | Table, design form, or graphics canvas     | Properties,        |
+|   Item              | Table, design form, or graphics canvas    | Properties,        |
 |     Child           |                                           | assets, references |
 |   Item              |                                           |                    |
 +---------------------+-------------------------------------------+--------------------+
