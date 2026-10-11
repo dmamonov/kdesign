@@ -1660,6 +1660,402 @@
                     "assetId": "meta-entrance",
                     "x": 448,
                     "y": 144
+                },
+                {
+                    "id": "5ac39fb9-eabc-45a5-b86d-b608c85e9a7e",
+                    "assetId": "block-mushroom",
+                    "x": 256,
+                    "y": 64
+                },
+                {
+                    "id": "b54df35e-b299-4894-9692-545e36ab6ced",
+                    "assetId": "block-mushroom",
+                    "x": 224,
+                    "y": 64
+                },
+                {
+                    "id": "c9e3473d-c564-4375-a307-7f609f98c9ed",
+                    "assetId": "block-mushroom",
+                    "x": 288,
+                    "y": 32
+                },
+                {
+                    "id": "daca6ca7-72d3-461e-8908-4cac03bf8995",
+                    "assetId": "block-mushroom",
+                    "x": 192,
+                    "y": 32
+                },
+                {
+                    "id": "51a296d6-11f2-4cf8-8f25-5d5f8bb52cd3",
+                    "assetId": "block-mushroom",
+                    "x": 208,
+                    "y": 32
+                },
+                {
+                    "id": "c991d5f7-494b-4fdb-a6db-5b3ab2ecc675",
+                    "assetId": "block-mushroom",
+                    "x": 208,
+                    "y": 32
+                },
+                {
+                    "id": "509ae7fd-bee7-4b17-9be1-fe51eb7453f9",
+                    "assetId": "block-mushroom",
+                    "x": 208,
+                    "y": 32
+                },
+                {
+                    "id": "7d09e772-2bbb-45c3-8054-7c5365feb5f1",
+                    "assetId": "block-mushroom",
+                    "x": 240,
+                    "y": 32
+                },
+                {
+                    "id": "e31e801a-1379-450a-a6cd-46840e78dada",
+                    "assetId": "block-mushroom",
+                    "x": 272,
+                    "y": 32
+                },
+                {
+                    "id": "c2b96ca2-5274-4a78-a00a-1bca3f0edbfd",
+                    "assetId": "block-mushroom",
+                    "x": 224,
+                    "y": 32
+                },
+                {
+                    "id": "fe3d8059-9f46-4e31-bbd3-9eb8d5d4ee12",
+                    "assetId": "block-mushroom",
+                    "x": 272,
+                    "y": 32
+                },
+                {
+                    "id": "b453d541-a4c1-46fb-9658-64f96a6e2868",
+                    "assetId": "block-mushroom",
+                    "x": 256,
+                    "y": 32
+                },
+                {
+                    "id": "a30f9924-b223-45a2-9e3e-117c409c0d1f",
+                    "assetId": "block-mushroom",
+                    "x": 352,
+                    "y": 64
+                },
+                {
+                    "id": "8da8831b-ca84-4806-86b7-bc100fe8fa61",
+                    "assetId": "block-mushroom",
+                    "x": 320,
+                    "y": 64
+                },
+                {
+                    "id": "1c37f103-7de7-4988-83b1-55366fa300a0",
+                    "assetId": "block-mushroom",
+                    "x": 320,
+                    "y": 64
+                },
+                {
+                    "id": "7d76b4da-2099-4d61-8371-51bd33824305",
+                    "assetId": "block-stone",
+                    "x": 368,
+                    "y": 112
+                },
+                {
+                    "id": "b836a5f1-83e6-4a99-b259-5b7d704f7cf0",
+                    "assetId": "block-stone",
+                    "x": 144,
+                    "y": 112
+                },
+                {
+                    "id": "2eb7f234-b0d6-4e9a-80a4-6c964d0ebf65",
+                    "assetId": "block-stone",
+                    "x": 160,
+                    "y": 112
+                },
+                {
+                    "id": "38103d41-8706-433c-a2c1-05e32eb687ba",
+                    "assetId": "block-stone",
+                    "x": 176,
+                    "y": 112
+                },
+                {
+                    "id": "a5e3d2e0-0b76-40e0-8fa3-446379e9bad5",
+                    "assetId": "block-stone",
+                    "x": 192,
+                    "y": 112
+                },
+                {
+                    "id": "20937777-6b05-4584-8bc7-e3290cdaaba7",
+                    "assetId": "block-stone",
+                    "x": 208,
+                    "y": 112
+                },
+                {
+                    "id": "ed775cda-cd30-4903-8409-e89b66defdd0",
+                    "assetId": "block-stone",
+                    "x": 208,
+                    "y": 96
+                },
+                {
+                    "id": "0e73587c-2d9a-4ebf-bedc-e21a1ac3f3d7",
+                    "assetId": "block-stone",
+                    "x": 208,
+                    "y": 80
+                },
+                {
+                    "id": "4737f436-b7fb-4b62-83dd-e8f566724e31",
+                    "assetId": "block-stone",
+                    "x": 272,
+                    "y": 80
+                },
+                {
+                    "id": "7b6402a7-efd3-4b9a-8617-fcc90e9d77a1",
+                    "assetId": "block-stone",
+                    "x": 272,
+                    "y": 112
+                },
+                {
+                    "id": "49459ade-2737-4779-81e3-922f01aad994",
+                    "assetId": "block-stone",
+                    "x": 272,
+                    "y": 96
+                },
+                {
+                    "id": "5dbc139f-0cb6-4529-9522-d8ecba5997d3",
+                    "assetId": "block-stone",
+                    "x": 288,
+                    "y": 112
+                },
+                {
+                    "id": "47ba04d9-9c53-4943-8a65-0a9f511206f2",
+                    "assetId": "block-stone",
+                    "x": 304,
+                    "y": 112
+                },
+                {
+                    "id": "448e3e8e-ad20-4e7d-8c53-2773b35e5def",
+                    "assetId": "block-stone",
+                    "x": 320,
+                    "y": 112
+                },
+                {
+                    "id": "0fb340f3-e46a-4c63-b189-06604e645a6c",
+                    "assetId": "block-stone",
+                    "x": 336,
+                    "y": 112
+                },
+                {
+                    "id": "e36bf5f0-af01-4f3b-bd45-9c2a7a1d8e0c",
+                    "assetId": "block-stone",
+                    "x": 64,
+                    "y": 112
+                },
+                {
+                    "id": "b2fab4d1-5d26-4899-9e01-a60fcf69e5da",
+                    "assetId": "block-stone",
+                    "x": 48,
+                    "y": 112
+                },
+                {
+                    "id": "3c5f4dff-c527-4195-8325-614a6198a854",
+                    "assetId": "block-stone",
+                    "x": 32,
+                    "y": 112
+                },
+                {
+                    "id": "6a3111a5-2a78-4709-ab1c-c7d94a3ad94d",
+                    "assetId": "block-stone",
+                    "x": 16,
+                    "y": 112
+                },
+                {
+                    "id": "eec44a96-7cdc-4376-915a-9c765ddded16",
+                    "assetId": "block-stone",
+                    "x": 0,
+                    "y": 112
+                },
+                {
+                    "id": "bd915875-4332-4f00-a6e3-8b2b9b9eee2e",
+                    "assetId": "block-stone",
+                    "x": 48,
+                    "y": 16
+                },
+                {
+                    "id": "91db48e3-cd63-45c4-9397-39d1f8b6fe1e",
+                    "assetId": "block-stone",
+                    "x": 48,
+                    "y": 32
+                },
+                {
+                    "id": "b4fcb79c-1987-4452-84ea-739d325dba31",
+                    "assetId": "block-stone",
+                    "x": 48,
+                    "y": 48
+                },
+                {
+                    "id": "576bf16c-da7a-478e-bd23-5023c227b71b",
+                    "assetId": "block-stone",
+                    "x": 48,
+                    "y": 64
+                },
+                {
+                    "id": "48dd1ca2-b440-4670-b3e5-46ebb36b345e",
+                    "assetId": "block-stone",
+                    "x": 64,
+                    "y": 64
+                },
+                {
+                    "id": "6a4280f3-8865-4adb-bbdc-9a5204207bb0",
+                    "assetId": "block-stone",
+                    "x": 96,
+                    "y": 64
+                },
+                {
+                    "id": "9fcec3b8-3940-4e29-baac-94c569f97fbd",
+                    "assetId": "block-stone",
+                    "x": 80,
+                    "y": 64
+                },
+                {
+                    "id": "98096032-4307-4584-ae5d-e8bcf712dd03",
+                    "assetId": "block-stone",
+                    "x": 112,
+                    "y": 64
+                },
+                {
+                    "id": "ec3a8af6-13ee-4cf5-9e4c-3e007215c657",
+                    "assetId": "block-stone",
+                    "x": 128,
+                    "y": 64
+                },
+                {
+                    "id": "aab9f831-7a4b-478f-a41a-3b1496340c5b",
+                    "assetId": "block-stone",
+                    "x": 128,
+                    "y": 48
+                },
+                {
+                    "id": "f69fe8c8-4a11-4b50-bdc4-ba41747a4c99",
+                    "assetId": "block-stone",
+                    "x": 128,
+                    "y": 32
+                },
+                {
+                    "id": "665fe181-b875-429f-8b67-3a55f6ef4a25",
+                    "assetId": "block-stone",
+                    "x": 128,
+                    "y": 16
+                },
+                {
+                    "id": "dd497e92-121b-4935-9f14-dcbab778a78f",
+                    "assetId": "block-stone",
+                    "x": 48,
+                    "y": 0
+                },
+                {
+                    "id": "54d66097-3150-475d-9a4b-6048dc3bd2d5",
+                    "assetId": "block-stone",
+                    "x": 64,
+                    "y": 0
+                },
+                {
+                    "id": "41304445-e4c0-44dc-b10f-04202acd288a",
+                    "assetId": "block-stone",
+                    "x": 80,
+                    "y": 0
+                },
+                {
+                    "id": "0e2cfc0b-4c4b-48ea-beee-53a679823203",
+                    "assetId": "block-stone",
+                    "x": 96,
+                    "y": 0
+                },
+                {
+                    "id": "48101dd9-78be-470c-8f48-fdc48e36917d",
+                    "assetId": "block-stone",
+                    "x": 112,
+                    "y": 0
+                },
+                {
+                    "id": "29fc8f53-5992-4adf-8a35-17a37ba1a864",
+                    "assetId": "block-stone",
+                    "x": 128,
+                    "y": 0
+                },
+                {
+                    "id": "d2ec515b-dd79-4cbf-a7ce-b4c079a83a61",
+                    "assetId": "block-mushroom",
+                    "x": 64,
+                    "y": 16
+                },
+                {
+                    "id": "cb6e78b2-7449-45ca-a335-c3eb69256118",
+                    "assetId": "block-mushroom",
+                    "x": 80,
+                    "y": 16
+                },
+                {
+                    "id": "3ff3ed0a-ef9c-4432-abe8-81a39834176f",
+                    "assetId": "block-mushroom",
+                    "x": 96,
+                    "y": 16
+                },
+                {
+                    "id": "eef6eb22-7d92-4af4-9b49-b2db87c304df",
+                    "assetId": "block-mushroom",
+                    "x": 112,
+                    "y": 16
+                },
+                {
+                    "id": "45442932-a43a-4dfc-86a7-1f256c4ce574",
+                    "assetId": "block-mushroom",
+                    "x": 64,
+                    "y": 32
+                },
+                {
+                    "id": "cd49083c-e1d4-4491-beb9-e0bed67f81e5",
+                    "assetId": "block-mushroom",
+                    "x": 80,
+                    "y": 32
+                },
+                {
+                    "id": "b3475b0c-a687-4e87-b427-b87b7780c87c",
+                    "assetId": "block-mushroom",
+                    "x": 96,
+                    "y": 32
+                },
+                {
+                    "id": "c3a923da-4a24-49f7-ae2c-d6574a39248e",
+                    "assetId": "block-mushroom",
+                    "x": 112,
+                    "y": 32
+                },
+                {
+                    "id": "91ae7749-84a4-4898-9943-26f405c2772f",
+                    "assetId": "block-mushroom",
+                    "x": 64,
+                    "y": 48
+                },
+                {
+                    "id": "5705b68f-fb26-470b-b220-9bbbfa34b661",
+                    "assetId": "block-mushroom",
+                    "x": 80,
+                    "y": 48
+                },
+                {
+                    "id": "5a21c7b0-a420-4e9e-8f21-7cf6925d2184",
+                    "assetId": "block-mushroom",
+                    "x": 96,
+                    "y": 48
+                },
+                {
+                    "id": "26a0c649-cdb4-41be-9be2-22fadb038e53",
+                    "assetId": "block-mushroom",
+                    "x": 96,
+                    "y": 48
+                },
+                {
+                    "id": "ac403dec-0255-4da0-a20f-58033ef390cc",
+                    "assetId": "block-door",
+                    "x": 112,
+                    "y": 48
                 }
             ],
             "properties": {},
@@ -1869,5 +2265,6 @@
             "type": "Movement",
             "description": "Reach higher paths with a short, forgiving jump."
         }
-    ]
+    ],
+    "hotkeys": {}
 }
