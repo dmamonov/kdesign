@@ -24,7 +24,7 @@ window.designer = {
   value(id) { return document.getElementById(id)?.value ?? ''; },
   pixel(id, color) { const el = document.getElementById(id); if(el) el.style.backgroundColor = color; },
   request(method, url, body, done) {
-    fetch(url, {method, signal: AbortSignal.timeout(url==='/api/generate' ? 100000 : 15000), headers: {'Content-Type':'application/json'}, ...(method === 'GET' ? {} : {body})})
+    fetch(url, {method, signal: AbortSignal.timeout(url==='/api/generate' ? 250000 : 15000), headers: {'Content-Type':'application/json'}, ...(method === 'GET' ? {} : {body})})
       .then(async r => { const text = await r.text(); done(r.ok, text); })
       .catch(e => done(false, e.message));
   },
@@ -40,7 +40,7 @@ window.designer = {
       const editor=referenceEditor;
       if(!editor || !editor.isConnected) {closeReferences();return;}
       editor.setRangeText('[['+id+']]',referenceStart,referenceEnd,'end');
-      closeReferences(); editor.focus(); action('reference-preview',editor.id,editor.value);editor.dataset.tablePending='true';commitTable(editor);if(!editor.dataset.tableOwner) action('form-edit',editor.id,editor.value);
+      closeReferences(); editor.focus(); editor.dataset.tablePending='true';commitTable(editor);if(!editor.dataset.tableOwner) action('form-edit',editor.id,editor.value);
     };
     const showChoices = query => {
       const list=document.getElementById('reference-choices'); if(!list) return;
@@ -71,7 +71,7 @@ window.designer = {
       const editor=e.target;if(editor.id==='tree-search'){action('tree-search','',editor.value);return;}if(!editor.matches('input[id],textarea[id]')) return;
       if(!editor.dataset.tableOwner) action('form-edit',editor.id,editor.value);
       if(!editor.matches('[data-references]')) return;
-      action('reference-preview',editor.id,editor.value);editor.dataset.tablePending='true';commitTable(editor);
+      editor.dataset.tablePending='true';commitTable(editor);
       const end=editor.selectionStart, prefix=editor.value.slice(0,end), match=prefix.match(/(?:^|\s)@([^\n@]*)$/);
       if(match) openReferences(editor,prefix.lastIndexOf('@'),end,match[1],false);else closeReferences();
     });

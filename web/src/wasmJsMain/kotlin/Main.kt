@@ -22,6 +22,8 @@ var brush = 22
 var assetBrush = ""
 var eraser = false
 var message = ""
+var generationPrompt = ""
+var generationSize = "16"
 var generating = false
 var generationAvailable = false
 var loaded = false
@@ -37,7 +39,7 @@ fun field(id: String, label: String, v: String = "", multiline: Boolean = false)
     val references = id !in setOf("width", "height", "new-width", "new-height", "target-path")
     val marker = if(references) "data-references='true'" else ""
     val input = if(multiline) "<textarea id='$id' $marker rows='3'>${esc(v)}</textarea>" else "<input id='$id' $marker value='${esc(v)}'>"
-    return "<div class='field-wrap'><label class='field' for='$id'>$label$input</label>" + if(references) "<div class='reference-tools'>${button("@ Reference","reference-picker",id,cls="tiny")}<small>Type @ to link an object</small></div><div class='reference-preview' id='$id-preview'>${rich(v)}</div></div>" else "</div>"
+    return "<div class='field-wrap'><label class='field' for='$id'>$label$input</label></div>"
 }
 fun checkpoint() { history += project; if(history.size>50) history.removeAt(0) }
 fun changed() { autosave.edited();queueSave() }
@@ -65,7 +67,7 @@ fun tileView(t: Tile): String = """
 <div class='editor-layout'><section class='panel'><div class='panel-bar'><span>Tile editor <small>${t.size} × ${t.size}</small></span><div>${button("✎ Pencil","pencil",cls=if(!eraser) "tool active" else "tool")}${button("◇ Eraser","eraser",cls=if(eraser) "tool active" else "tool")}</div></div><div class='pixel-stage'><div class='pixel-grid' style='grid-template-columns:repeat(${t.size},1fr)'>${t.pixels.mapIndexed { i,c -> "<button id='px-$i' aria-label='Pixel ${i%t.size+1}, ${i/t.size+1}' ${attr("paint",i.toString())} style='background-color:${if(c<0) "transparent" else palette[c]}'></button>" }.joinToString("")}</div></div><div class='panel-caption'>Click or drag to draw · transparency is preserved · shared tiles update every usage</div></section>
 <aside class='inspector'><section class='panel padded'><div class='eyebrow'>COLOR PALETTE</div><h3>Nintendo Entertainment System</h3><div class='palette'>${palette.mapIndexed { i,c -> "<button title='Color $i · $c' aria-label='Color $i' class='${if(brush==i&&!eraser) "chosen" else ""}' ${attr("color",i.toString())} style='background:$c'></button>" }.joinToString("")}</div>${button("▧ Transparent","eraser",cls="wide")}<p class='muted'>64 palette entries + transparency.<br>Selected: ${if(eraser) "transparent" else palette[brush]}</p></section>${generationPanel()}<section class='panel padded'><div class='eyebrow'>LIVE PREVIEW</div><div class='preview-tile'>${svg(t.id)}</div></section></aside></div>
 """
-fun generationPanel() = """<section class='panel padded'><div class='eyebrow'>✦ GENERATE WITH OPENAI</div><h3>From an idea to pixels</h3>${field("prompt","Describe your tile", "", true)}<label class='field'>Generated tile size<select id='generation-size'><option value='16'>16 × 16 pixels</option><option value='8'>8 × 8 pixels</option></select></label>${button(if(generating) "Generating…" else "✦ Generate tile","generate",cls="primary wide")}<p class='muted'>${if(generationAvailable) "Creates a new editable tile. For blocks, also places it in the first available cell." else "Set OPENAI_API_KEY on the server to enable generation."}</p></section>"""
+fun generationPanel() = """<section class='panel padded'><div class='eyebrow'>✦ GENERATE WITH OPENAI</div><h3>From an idea to pixels</h3>${field("prompt","Describe your tile", generationPrompt, true)}<label class='field'>Generated tile size<select id='generation-size'><option value='16' ${if(generationSize=="16") "selected" else ""}>16 × 16 pixels</option><option value='8' ${if(generationSize=="8") "selected" else ""}>8 × 8 pixels</option></select></label>${button(if(generating) "Generating…" else "✦ Generate tile","generate",cls="primary wide")}<p class='muted'>${if(generationAvailable) "Generates an image, then converts it to an editable NES tile. May take a few minutes. For blocks, places it in the first available cell." else "Set OPENAI_API_KEY on the server to enable generation."}</p></section>"""
 fun canvasView(b: Block, l: Level?): String {
     val assets=project.compositionAssets(b.id)
     if(selectionOwner!=b.id) {mapSelection=null;selectionOwner=b.id}
@@ -147,7 +149,7 @@ fun generate() {
     request("POST","/api/generate",buildJsonObject {put("description",prompt);put("size",size)}.toString()) {ok,text ->
         generating=false
         try {
-            check(ok) {text}; val obj=json.parseToJsonElement(text).jsonObject
+            check(ok) {runCatching {json.parseToJsonElement(text).jsonObject["error"]?.jsonPrimitive?.content}.getOrNull() ?: "Generation request failed. Check the server connection."}; val obj=json.parseToJsonElement(text).jsonObject
             val t=Tile(uuid(),obj["name"]!!.jsonPrimitive.content,size,obj["pixels"]!!.jsonArray.map {it.jsonPrimitive.int})
             var placed=false
             change { p ->
@@ -165,13 +167,22 @@ fun generate() {
 }
 fun action(kind: String, id: String, v: String) {
     try {
-        if(tableErrors.isNotEmpty() && kind !in setOf("form-edit", "table-edit", "reference-preview", "save", "undo", "tree-search", "category")) {
+        if(tableErrors.isNotEmpty() && kind !in setOf("form-edit", "table-edit", "save", "undo", "tree-search", "category")) {
             showError("Correct the invalid input before leaving this editor, or use Undo to discard it.")
             return
         }
         if(kind in setOf("section", "category-root", "select", "open", "reference-open", "text-usage-open", "usage-open", "portal-go", "instance-open")) rememberLocation()
         if(handleMapAction(kind,id,v)) return
         when(kind) {
+            "delete-request" -> {deletingId=id}
+            "delete-cancel" -> deletingId=""
+            "delete-confirm" -> {
+                require(id==deletingId) {"Select the object to delete first"}
+                change {it.deleteObject(id)}
+                deletingId="";usageId="";highlightPath=emptyList();hotkeyConflict=null
+                selected="";tab=if(section=="Levels") "Table" else "Library"
+                message="Object deleted. Undo restores it and its references."
+            }
             "form-edit" -> {editForm(id,v);return}
             "table-edit" -> {
                 val input=json.parseToJsonElement(v).jsonObject
@@ -180,12 +191,11 @@ fun action(kind: String, id: String, v: String) {
                 val content=input["content"]!!.jsonPrimitive.content
                 try {
                     change { p -> p.copy(levels=p.levels.map { l -> if(l.id!=owner) l else if(key=="title") l.copy(title=content.trim().also {require(it.isNotBlank()) { "Level title cannot be empty" }}) else l.copy(notes=l.notes+(key to content)) }) }
-                    tableErrors.remove(id);message="";tableCellState(id, "");publishReferenceObjects();referencePreview(id,rich(content))
+                    tableErrors.remove(id);message="";tableCellState(id, "");publishReferenceObjects()
                 } catch(e: Exception) { tableErrors.add(id);tableCellState(id,e.message ?: "Invalid value") }
                 updateSaveStatus()
                 return
             }
-            "reference-preview" -> { referencePreview(id,rich(v));return }
             "reference-open" -> openReference(id)
             "text-usage-open" -> openTextUsage(id,v)
             "reload" -> {load();return}
@@ -207,7 +217,7 @@ fun action(kind: String, id: String, v: String) {
             "stroke" -> {checkpoint();return}
             "paint" -> { val t=currentTile() ?: return; val index=id.toInt(); val c=if(eraser) -1 else brush; project=project.copy(tiles=project.tiles.map {if(it.id==t.id) it.copy(pixels=it.pixels.toMutableList().also {it[index]=c}) else it});changed();pixel("px-$index",if(c<0) "transparent" else palette[c]);return }
             "stroke-end" -> Unit
-            "undo" -> if(tableErrors.isNotEmpty()) {tableErrors.clear()} else if(history.isNotEmpty()) {project=history.removeAt(history.lastIndex);changed();if(selected.isNotEmpty() && selected !in project.objectIds()) {selected="";tab=if(section=="Levels") "Table" else "Library"}}
+            "undo" -> if(tableErrors.isNotEmpty()) {tableErrors.clear()} else if(history.isNotEmpty()) {project=history.removeAt(history.lastIndex);message="Change undone";changed();if(selected.isNotEmpty() && selected !in project.objectIds()) {selected="";tab=if(section=="Levels") "Table" else "Library"}}
             "place" -> { if(mapTool=="select") return;
                 if(mapTool=="inspect") {val (x,y)=id.split(',').map {it.toInt()};val placement=currentBlock()!!.children.lastOrNull {val (w,h)=project.size(it.assetId);x>=it.x&&x<it.x+w&&y>=it.y&&y<it.y+h};highlightPath=listOfNotNull(placement?.id);render();return}
                 val b=currentBlock()!!; val (x,y)=id.split(',').map {it.toInt()}; change {p->p.copy(blocks=p.blocks.map { if(it.id!=b.id) it else if(mapTool=="erase") it.copy(children=it.children.filterNot {c -> val (w,h)=p.size(c.assetId); x>=c.x&&x<c.x+w&&y>=c.y&&y<c.y+h }) else {require(assetBrush.isNotBlank()){ "Create a child asset first" };it.copy(children=it.children+Placement(uuid(),assetBrush,x,y))} })} }

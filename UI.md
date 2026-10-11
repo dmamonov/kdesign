@@ -19,7 +19,7 @@ They can appear beside the editor without replacing the category menu or navigat
 +--------------------------------------------------------------------------------------+
 | Project                 Category menu items                         Autosave status  |
 +---------------------+----------------------------------------------------------------+
-| Navigation tree     | Breadcrumbs / selected item title                              |
+| Navigation tree     | Back / contextual actions                              |
 |                     | Workspace views and contextual actions                         |
 | Search              +-------------------------------------------+--------------------+
 | Category root       |                                           |                    |
@@ -135,9 +135,10 @@ Following connections must not recursively expand linked objects as containment 
 
 ## Workspace navigation
 
-Show a title and breadcrumbs above the selected item's workspace.
-Breadcrumbs provide context for nested items and usage results.
-Titles must support object references, like other authored text.
+Use the left navigation to identify the current category and selected item.
+Do not repeat titles, category labels, or introductory descriptions above the central workspace.
+Keep Back and contextual actions such as Find usages in a compact toolbar.
+Titles remain editable and support object references in the relevant design fields.
 
 Use local views for different aspects of the same item.
 For example, a level can offer Map, Design, and Usages views.
@@ -279,7 +280,10 @@ The final attachment controls depend on how concepts relate to graphic definitio
 
 Every authored text editor must allow the designer to insert an object reference.
 This includes titles, table cells, metadata, and generation descriptions.
-Provide a searchable object picker that distinguishes targets by kind and context.
+Typing `@` opens a searchable object picker that distinguishes targets by kind and context.
+Do not show a reference button or repeated usage guidance beneath each text field.
+Always show the editable field.
+Do not duplicate its value in a rendered preview beside or beneath it.
 
 References should be recognizable and navigable when text is displayed.
 Editing text and following a link must be distinct interactions.
@@ -343,3 +347,16 @@ Errors should appear near the affected operation and preserve the designer's con
 Support keyboard navigation through the top menu, tree, table, and object pickers.
 Keep focus visible and label icon-only controls.
 Do not rely on color alone to communicate selection, references, or save failures.
+
+## Deleting objects
+
+Every selected tile, block, meta block, level, and conceptual object has a Delete action.
+Show a confirmation dialog explaining which placements, connections, and references will change.
+Keep child definitions when deleting their container.
+Replace text references with the referenced object's readable name.
+Remove incoming placements, semantic links, and hotkeys.
+Remove portal connections whose destinations no longer exist.
+Move a deleted level's sublevels to its parent.
+Require removing or reassigning a level before deleting its root meta block.
+Deletion autosaves as one change.
+Undo restores the object and its previous references during the current session.

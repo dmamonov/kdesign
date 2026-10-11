@@ -75,20 +75,19 @@ fun renderShell() {
     val level=currentLevel(); val block=currentBlock(); val tile=currentTile()
     val concept=project.concepts.any {it.id==selected}
     val root=selected.isEmpty()
-    val heading=if(root) if(section=="Levels") "Level overview" else section else project.name(selected)
     val tabs=when {root->emptyList(); concept->listOf("Design"); level!=null->listOf("Canvas","Design brief");else->listOf("Editor","Properties")}
     mount("""
       <div class='app-shell'>
       <header class='app-top'><div class='project-brand'><span class='brand-icon'>K</span><div><strong>${rich(project.title)}</strong><small>Adventure designer</small></div>${button("Edit title","new",v="Project",cls="tiny quiet")}</div><div class='header-actions'><span class='save-state' role='status'>${text(statusText())}</span>${button("↶ Undo","undo",cls="quiet")}${button("Retry / save now","save",cls="quiet")}</div></header>
       <nav class='category-nav' aria-label='Object categories'>${sections.joinToString("") {"<button ${attr("section",it)} aria-current='${if(section==it) "page" else "false"}' class='${if(section==it) "active" else ""}'>${esc(it)}</button>"}}</nav>
       <aside class='navigation-panel' aria-label='Category navigation'><div class='tree-heading'><span>${text(section)}</span><small>EXPLORER</small></div><label class='tree-search'>Search ${text(section.lowercase())}<input id='tree-search' value='${esc(treeQuery)}' placeholder='Search names or IDs…'></label><div class='explorer'>${treeView()}</div><div class='tree-create'>${createButton()}<small>Local project · autosave enabled</small></div></aside>
-      <main data-view='${esc(section)}:${esc(selected)}:${esc(tab)}'><div class='workspace-location'>${if(locations.isNotEmpty()) button("← Back","navigate-back",cls="tiny quiet") else ""}${button(text(section),"category-root",cls="quiet")}<span>/ ${if(root) "Overview" else text(project.name(selected))}</span></div>
-      <div class='page-heading'><div><div class='eyebrow'>${if(root) "COLLECTION" else if(level!=null) "INDEPENDENT SPACE" else "SHARED DEFINITION"}</div><h1>${rich(heading)}</h1><p>${if(root && section=="Levels") "Design every space together. Edit any cell directly." else if(section=="Objects") "Browse existing block definitions and their placed instances." else if(root) "Reusable ideas and assets for your adventure." else if(level!=null) "Compose the space and describe its purpose." else "Changes to this definition are shared across its usages."}</p></div><div class='heading-actions'>${if(!root) button("Find usages","usages",selected) else ""}</div></div>
+      <main data-view='${esc(section)}:${esc(selected)}:${esc(tab)}'>
+      ${if(locations.isNotEmpty() || !root) "<div class='workspace-location'>${if(locations.isNotEmpty()) button("← Back","navigate-back",cls="tiny quiet") else ""}${if(!root) button("Find usages","usages",selected,cls="quiet")+button("Delete","delete-request",selected,cls="quiet danger") else ""}</div>" else ""}
       ${if(message.isNotBlank()) "<div class='notice' role='status'>${text(message)}${button("Dismiss","dismiss",cls="tiny")}</div>" else ""}
       ${if(tabs.isNotEmpty()) "<div class='tabbar'>${tabs.joinToString("") {button(when(it){"Canvas"->"Map";"Design brief"->"Design";else->it},"tab",it,cls=if(tab==it) "active" else "")}}<span>${if(tile!=null) "${tile.size} × ${tile.size} · NES PALETTE" else if(block!=null) "${block.width} × ${block.height} · ${block.children.size} PLACEMENTS" else "DESIGN CONCEPT"}</span></div>" else ""}
       ${hotkeyConflict?.let { (asset,key) -> "<div class='notice' role='alert'><span>Key $key is assigned to ${text(project.name(project.hotkeys[key] ?: ""))}. Reassign it to ${text(project.name(asset))}?</span><div>${button("Reassign key","hotkey-confirm")}${button("Cancel","hotkey-cancel")}</div></div>" } ?: ""}
       <div class='page-body'>${when {root && section=="Levels"->tableView();root->libraryView();concept->conceptWorkspace();tab=="Design brief" && level!=null->briefView(level);tab=="Properties"->propertiesView();tile!=null->tileView(tile);block!=null->canvasView(block,level);else->libraryView()}}</div></main></div>
-      ${if(usageId.isNotBlank()) usagesView() else ""}${if(modal.isNotBlank()) modalView() else ""}
+      ${if(deletingId.isNotBlank()) deletionView() else ""}${if(usageId.isNotBlank()) usagesView() else ""}${if(modal.isNotBlank()) modalView() else ""}
     """.trimIndent())
 }
 

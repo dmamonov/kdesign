@@ -58,29 +58,38 @@ fun generateTile(body: String): String {
     val description = input["description"]!!.jsonPrimitive.content
     val size = input["size"]!!.jsonPrimitive.int
     require(size in listOf(8,16) && description.length in 1..2000) { "Invalid generation request" }
-    val schema = buildJsonObject {
-        put("type", "object"); put("additionalProperties", false)
-        putJsonObject("properties") {
-            putJsonObject("name") { put("type", "string") }
-            putJsonObject("pixels") { put("type", "array"); put("minItems", size*size); put("maxItems", size*size); putJsonObject("items") { put("type", "integer"); put("minimum", -1); put("maximum",63) } }
-        }
-        putJsonArray("required") { add("name"); add("pixels") }
-    }
     val request = buildJsonObject {
-        put("model", System.getenv("OPENAI_MODEL") ?: "gpt-4.1-mini")
-        put("store", false)
-        put("input", "Design a readable side-scrolling game pixel-art tile: $description. Size ${size}x$size. Return row-major palette indexes; -1 is transparent. Palette: ${palette.mapIndexed { i,c -> "$i=$c" }.joinToString()}. Use a small coherent subset of colors. Return exactly ${size*size} pixels.")
-        putJsonObject("text") { putJsonObject("format") { put("type", "json_schema"); put("name", "tile"); put("strict", true); put("schema", schema) } }
+        put("model", System.getenv("OPENAI_IMAGE_MODEL")?.takeIf {it.isNotBlank()} ?: "gpt-image-1.5")
+        put("size", "1024x1024")
+        put("quality", "medium")
+        put("background", "transparent")
+        put("output_format", "png")
+        put("n", 1)
+        put("prompt", """Create one readable pixel-art sprite for a side-scrolling NES-style game.
+            Subject: $description
+            Design for a final ${size}x$size pixel tile, shown enlarged on this canvas.
+            Use a very coarse grid, large flat color clusters, a strong dark outline, and a clear silhouette.
+            Keep only the defining features that remain recognizable at ${size}x$size.
+            Use 4 to 6 coherent colors. No gradients, tiny details, text, labels, grids, or checkerboard.
+            For an object, show exactly one complete centered object, front or slight side view,
+            occupying most of the image, with transparent surroundings and no cast shadow or scenery.
+            For a requested terrain or surface tile, fill the entire square with that material.
+            Do not show a sprite sheet, multiple versions, or an illustration of a game screen.
+        """.trimIndent())
     }
     val response = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build().send(
-        HttpRequest.newBuilder(URI("https://api.openai.com/v1/responses")).timeout(Duration.ofSeconds(90)).header("Authorization", "Bearer $key").header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(request.toString())).build(), HttpResponse.BodyHandlers.ofString())
-    check(response.statusCode() in 200..299) { "OpenAI returned HTTP ${response.statusCode()}; check model access, quota and server configuration" }
-    val output = json.parseToJsonElement(response.body()).jsonObject["output"]!!.jsonArray
-    val text = output.flatMap { it.jsonObject["content"]?.jsonArray ?: JsonArray(emptyList()) }.firstOrNull { it.jsonObject["type"]?.jsonPrimitive?.content == "output_text" }?.jsonObject?.get("text")?.jsonPrimitive?.content ?: error("Generation returned no tile (possibly refused or incomplete)")
-    val tile = json.parseToJsonElement(text).jsonObject
-    val pixels = tile["pixels"]!!.jsonArray.map { it.jsonPrimitive.int }
-    require(pixels.size == size*size && pixels.all { it in -1..63 }) { "Invalid generated pixels" }
-    return tile.toString()
+        HttpRequest.newBuilder(URI("https://api.openai.com/v1/images/generations")).timeout(Duration.ofSeconds(240)).header("Authorization", "Bearer $key").header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(request.toString())).build(), HttpResponse.BodyHandlers.ofString())
+    if(response.statusCode() !in 200..299) throw generationError(response.statusCode(), response.body(), response.headers().firstValue("Retry-After").orElse(null))
+    val encoded = json.parseToJsonElement(response.body()).jsonObject["data"]?.jsonArray
+        ?.firstOrNull()?.jsonObject?.get("b64_json")?.jsonPrimitive?.content
+        ?: error("OpenAI returned no image. Try a different description.")
+    val bytes = java.util.Base64.getDecoder().decode(encoded)
+    val image = javax.imageio.ImageIO.read(bytes.inputStream()) ?: error("OpenAI returned an unreadable image")
+    val pixels = rasterToTile(image, size)
+    return buildJsonObject {
+        put("name", description.trim().lineSequence().first().take(80))
+        put("pixels", JsonArray(pixels.map {JsonPrimitive(it)}))
+    }.toString()
 }
 fun main() {
     val store = FileStore(Path.of(System.getenv("DATA_DIR") ?: "data"))
@@ -114,8 +123,8 @@ fun main() {
                 else -> exchange.respond(405, "{\"error\":\"Method not allowed\"}")
             }
         } catch (e: Exception) {
-            val code = when(e) { is NoSuchFileException -> 404; is IllegalArgumentException -> 400; else -> 500 }
-            exchange.respond(code, buildJsonObject { put("error", e.message ?: "Request failed") }.toString())
+            val code = when(e) { is GenerationError -> e.status; is NoSuchFileException -> 404; is IllegalArgumentException -> 400; else -> 500 }
+            exchange.respond(code, buildJsonObject { put("error", e.message ?: "Request failed"); if(e is GenerationError) put("code", e.errorCode) }.toString())
         } finally { exchange.close() }
     }
     server.start()

@@ -29,3 +29,5 @@
 @media(max-width:700px){.app-shell{grid-template-columns:170px minmax(0,1fr)}.app-top{padding:0 12px}.project-brand strong{max-width:160px}.project-brand .tiny{display:block;font-size:9px;padding:3px}.app-top .header-actions button{display:block;font-size:9px;padding:4px}.app-top .save-state{font-size:9px;max-width:110px}.category-nav{padding:0 5px}.category-nav button{padding:0 12px}.navigation-panel{padding:16px 6px}.tree-heading small{display:none}.tree-search{padding:0 4px 12px}.inspector{display:block}.inspector .panel+.panel{margin-top:15px}.workspace-location{padding:0 12px}.page-heading{display:block}.heading-actions{margin:12px 0 0}.page-body,.page-heading{padding-left:12px;padding-right:12px}.tabbar{margin:0 12px}.form-grid{grid-template-columns:1fr}.page-heading h1{font-size:22px}}
 .fill-help{padding:0 14px 12px;color:#a1b298;font-size:10px;line-height:1.6}
 .selected-instance{border-color:#819f65}.selected-instance small{overflow-wrap:anywhere}
+
+button.danger{color:#ffb6a6;border-color:#865346}button.danger:hover{background:#53332d}.dialog li{margin:10px 0;line-height:1.6}

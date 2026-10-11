@@ -30,13 +30,19 @@ Optional environment variables:
 | `DATA_DIR`       | `data`                                        | Filesystem storage root                           |
 | `WEB_DIR`        | `web/build/dist/wasmJs/developmentExecutable` | Built browser files                               |
 | `OPENAI_API_KEY` | unset                                         | Enable tile generation; server only               |
-| `OPENAI_MODEL`   | `gpt-4.1-mini`                                | Responses API model supporting structured outputs |
+| `OPENAI_IMAGE_MODEL` | `gpt-image-1.5` | Image generation model |
 
 To enable generation, export the key in your shell before starting the server. Do not put credentials in `data`, browser
 code, or Git. A prompt produces a **new** tile; it never overwrites an existing tile. When invoked from a basic block,
-the generated tile is also placed in the first available cell if one exists. The request uses OpenAI structured outputs
-to produce palette-indexed pixel art, rather than generating and downsampling a raster image. Real API calls are made
-only when you press Generate; your API account is billed for those calls.
+the generated tile is also placed in the first available cell if one exists.
+The server generates a PNG with the OpenAI Images API.
+It crops transparent padding, preserves aspect ratio, and reduces it to the selected tile size.
+Colors are mapped to the NES palette, while transparency is retained.
+Generation can take a few minutes.
+The former text-model palette-array generator is no longer used.
+`OPENAI_MODEL` does not configure image generation; use `OPENAI_IMAGE_MODEL` instead.
+Real API calls are made only when you press Generate.
+Your API account is billed for those calls.
 
 ## Workspaces
 
@@ -70,9 +76,16 @@ Assigning an occupied block hotkey offers an explicit Reassign action.
   Open a result to navigate to its owner/level and highlight its first placement; the full instance path is shown for
   deeper navigation.
 
-The canvas supports 8- and 16-pixel placement grids. This is an authoring tool, not a playable game engine. Entity
-deletion, redo, multi-user merging, animation, collision simulation, and richer visual quest graphs are future work. The
-current concept selector attaches one concept per definition; the file model supports multiple.
+Select any object and choose **Delete** to review its removal before confirming.
+Deletion autosaves and supports Undo, including restoration of removed links and placements.
+Text references become plain names, and child definitions are kept.
+Deleting a level moves its sublevels to its parent.
+A meta block used as a level root requires deleting those levels or changing their roots first.
+
+The canvas supports 8- and 16-pixel placement grids.
+This is an authoring tool, not a playable game engine.
+Redo, multi-user merging, animation, collision simulation, and richer quest graphs are future work.
+The current concept selector attaches one concept per definition; the file model supports multiple.
 
 Autosave status shows pending, saving, saved, validation errors, or retrying after a write failure. Failed writes retry
 with backoff (up to 30 seconds). Only one request is in flight; its acknowledgement cannot mark newer edits saved. Save
@@ -150,4 +163,4 @@ Modules: `model` (shared Kotlin data and graph logic), `web` (Kotlin/Wasm UI wit
 HTTP server). The original `utils` starter module remains available but is not used by the designer.
 
 Implementation
-references: [Kotlin/Wasm JavaScript interoperability](https://kotlinlang.org/docs/wasm-js-interop.html), [OpenAI structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses).
+references: [Kotlin/Wasm JavaScript interoperability](https://kotlinlang.org/docs/wasm-js-interop.html), [OpenAI image generation](https://developers.openai.com/api/docs/guides/image-generation).

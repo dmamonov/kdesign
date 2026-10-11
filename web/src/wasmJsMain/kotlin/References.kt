@@ -5,8 +5,6 @@ import kotlinx.serialization.json.*
 
 @JsFun("(objects) => window.designer.referenceObjects = JSON.parse(objects)")
 external fun referenceObjects(objects: String)
-@JsFun("(id, html) => { const el=document.getElementById(id + '-preview'); if(el) el.innerHTML=html; }")
-external fun referencePreview(id: String, html: String)
 fun text(s: String) = esc(project.displayText(s))
 fun rich(s: String): String = buildString {
     var cursor = 0

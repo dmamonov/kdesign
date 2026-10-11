@@ -35,6 +35,8 @@ fun save() {
 }
 /** Update existing entities as the user types, without remounting/focusing the UI. */
 fun editForm(id: String, content: String) {
+    if(id=="prompt") {generationPrompt=content;return}
+    if(id=="generation-size") {generationSize=content;return}
     val active = when {
         modal=="Project" -> id=="new-name"
         (modal=="Edit concept" || (modal.isEmpty() && section in categories)) -> id in setOf("new-name","concept-description","category","concept-type")
