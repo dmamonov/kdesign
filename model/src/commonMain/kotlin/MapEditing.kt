@@ -29,3 +29,24 @@ fun Project.fillArea(parentId: String, assetId: String, area: MapArea, snap: Int
 fun Project.clearArea(parentId: String, area: MapArea): Project = copy(blocks=blocks.map { b ->
     if(b.id!=parentId) b else b.copy(children=b.children.filterNot { c -> val (w,h)=size(c.assetId);area.contains(c.x,c.y,w,h) })
 }).also {it.validate()}
+
+/** Clipboard placements are relative to the selection origin and keep shared asset references. */
+data class MapClipboard(val width: Int, val height: Int, val placements: List<Placement>)
+fun Project.copyArea(parentId: String, area: MapArea): MapClipboard {
+    val parent=blocks.first {it.id==parentId}
+    return MapClipboard(area.width,area.height,parent.children.filter {c ->
+        val (w,h)=size(c.assetId);area.contains(c.x,c.y,w,h)
+    }.map {it.copy(x=it.x-area.x,y=it.y-area.y)})
+}
+fun Project.pasteArea(parentId: String, clipboard: MapClipboard, x: Int, y: Int, newId: () -> String): Project {
+    require(clipboard.placements.isNotEmpty()) {"The copied area contains no whole items"}
+    val parent=blocks.first {it.id==parentId}
+    require(x>=0 && y>=0 && x+clipboard.width<=parent.width && y+clipboard.height<=parent.height) {"The copied area does not fit here"}
+    val allowed=compositionAssets(parentId)
+    require(clipboard.placements.all {it.assetId in allowed}) {"The copied items are not compatible with this map"}
+    val pasted=clipboard.placements.map {it.copy(id=newId(),x=x+it.x,y=y+it.y)}
+    val area=MapArea(x,y,clipboard.width,clipboard.height)
+    return copy(blocks=blocks.map { b -> if(b.id!=parentId) b else b.copy(
+        children=b.children.filterNot {c -> val (w,h)=size(c.assetId);area.contains(c.x,c.y,w,h)}+pasted
+    )}).also {it.validate()}
+}

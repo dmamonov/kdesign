@@ -18,7 +18,7 @@ fun switchSection(name: String) {
     section = name
     val remembered = sectionMemory[name]
     selected = remembered?.first ?: ""
-    tab = remembered?.second ?: if(name == "Levels") "Table" else "Library"
+    tab = remembered?.second ?: if(name == "Levels") "World map" else "Library"
     treeQuery = ""
 }
 fun sectionItems(): List<String> = when(section) {
@@ -75,7 +75,7 @@ fun renderShell() {
     val level=currentLevel(); val block=currentBlock(); val tile=currentTile()
     val concept=project.concepts.any {it.id==selected}
     val root=selected.isEmpty()
-    val tabs=when {root->emptyList(); concept->listOf("Design"); level!=null->listOf("Canvas","Design brief");else->listOf("Editor","Properties")}
+    val tabs=when {root && section=="Levels"->listOf("World map","Table");root->emptyList(); concept->listOf("Design"); level!=null->listOf("Canvas","Overview","Design brief");else->listOf("Editor","Properties")}
     mount("""
       <div class='app-shell'>
       <header class='app-top'><div class='project-brand'><span class='brand-icon'>K</span><div><strong>${rich(project.title)}</strong><small>Adventure designer</small></div>${button("Edit title","new",v="Project",cls="tiny quiet")}</div><div class='header-actions'><span class='save-state' role='status'>${text(statusText())}</span>${button("↶ Undo","undo",cls="quiet")}${button("Retry / save now","save",cls="quiet")}</div></header>
@@ -84,9 +84,9 @@ fun renderShell() {
       <main data-view='${esc(section)}:${esc(selected)}:${esc(tab)}'>
       ${if(locations.isNotEmpty() || !root) "<div class='workspace-location'>${if(locations.isNotEmpty()) button("← Back","navigate-back",cls="tiny quiet") else ""}${if(!root) button("Find usages","usages",selected,cls="quiet")+button("Delete","delete-request",selected,cls="quiet danger") else ""}</div>" else ""}
       ${if(message.isNotBlank()) "<div class='notice' role='status'>${text(message)}${button("Dismiss","dismiss",cls="tiny")}</div>" else ""}
-      ${if(tabs.isNotEmpty()) "<div class='tabbar'>${tabs.joinToString("") {button(when(it){"Canvas"->"Map";"Design brief"->"Design";else->it},"tab",it,cls=if(tab==it) "active" else "")}}<span>${if(tile!=null) "${tile.size} × ${tile.size} · NES PALETTE" else if(block!=null) "${block.width} × ${block.height} · ${block.children.size} PLACEMENTS" else "DESIGN CONCEPT"}</span></div>" else ""}
+      ${if(tabs.isNotEmpty()) "<div class='tabbar'>${tabs.joinToString("") {button(when(it){"Canvas"->"Map";"Design brief"->"Design";else->it},"tab",it,cls=if(tab==it) "active" else "")}}<span>${if(tile!=null) "${tile.size} × ${tile.size} · NES PALETTE" else if(block!=null) "${block.width} × ${block.height} · ${block.children.size} PLACEMENTS" else if(root) "" else "DESIGN CONCEPT"}</span></div>" else ""}
       ${hotkeyConflict?.let { (asset,key) -> "<div class='notice' role='alert'><span>Key $key is assigned to ${text(project.name(project.hotkeys[key] ?: ""))}. Reassign it to ${text(project.name(asset))}?</span><div>${button("Reassign key","hotkey-confirm")}${button("Cancel","hotkey-cancel")}</div></div>" } ?: ""}
-      <div class='page-body'>${when {root && section=="Levels"->tableView();root->libraryView();concept->conceptWorkspace();tab=="Design brief" && level!=null->briefView(level);tab=="Properties"->propertiesView();tile!=null->tileView(tile);block!=null->canvasView(block,level);else->libraryView()}}</div></main></div>
+      <div class='page-body'>${when {root && section=="Levels"->if(tab=="Table") tableView() else worldMapView();root->libraryView();concept->conceptWorkspace();tab=="Overview" && level!=null->worldMapView(level);tab=="Design brief" && level!=null->briefView(level);tab=="Properties"->propertiesView();tile!=null->tileView(tile);block!=null->canvasView(block,level);else->libraryView()}}</div></main></div>
       ${if(deletingId.isNotBlank()) deletionView() else ""}${if(usageId.isNotBlank()) usagesView() else ""}${if(modal.isNotBlank()) modalView() else ""}
     """.trimIndent())
 }

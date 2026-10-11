@@ -360,3 +360,70 @@ Move a deleted level's sublevels to its parent.
 Require removing or reassigning a level before deleting its root meta block.
 Deletion autosaves as one change.
 Undo restores the object and its previous references during the current session.
+
+## Screen size and high-level maps
+
+Use 256 × 240 pixels as the default screen size and the initial size for new levels.
+Keep existing level dimensions unchanged.
+Divide level previews and editing canvases into screen-sized regions.
+The Levels category opens a World map with previews of every independent level space.
+Show parent, sublevel, and portal links beside each preview.
+Click a preview to open its editable map.
+Keep the editable overview table available in the Table tab.
+Provide an Overview tab within each level for its complete map at a glance.
+
+## Compact map editor
+
+End the map editor after the tile or block palette.
+Do not show the Placed instances list or the supplementary panels that followed it.
+Place the tile or block palette to the right of the canvas.
+Use a scrollable grid of assets with their hotkey controls.
+On narrow phone screens, place the palette below the canvas.
+
+## Selection and map clipboard
+
+Click to select a cell, or drag to select an area at any time.
+Assign any letter or digit to an asset using its palette control or Shift plus the key.
+Press the assigned key to fill the selection with that asset.
+Letter keys are reserved for assets rather than tool modes.
+Delete or Backspace clears whole items contained in the selection.
+Ctrl/Command+C copies whole selected items; Ctrl/Command+X cuts them.
+Ctrl/Command+V pastes at the selected cell or the selection's upper-left corner.
+The map clipboard is shared across maps during the current browser session.
+Pasted items keep shared definition references and receive new placement identities.
+Reject incompatible items and out-of-bounds pastes without applying partial changes.
+Keep standard text editing shortcuts unchanged while a text field has focus.
+
+## Tile color palette
+
+Place the NES color palette horizontally above the tile editor.
+Arrange its 64 colors in two rows of 32 swatches.
+Keep transparency and the current color beside the palette controls.
+Allow horizontal scrolling on narrow screens rather than adding more rows.
+
+Keep the tile workspace compact with a viewport-sized drawing grid and reduced panel spacing.
+Keep generation controls and a small live preview beside the canvas on desktop screens.
+Keep the two-row palette above both columns.
+
+Tile drawing supports Undo in the tile toolbar and with Ctrl/Command+Z.
+Treat each pencil or eraser stroke as one undoable edit.
+Strokes that do not change any pixels do not consume an undo step.
+Keep native text undo when a text field has focus.
+Undo autosaves the restored tile and updates its preview and shared usages.
+
+## Navigation URLs
+
+Store the current category, object, and editor tab in the URL fragment.
+Include the selected instance path and open usages when present.
+Restore navigation after refresh and support browser Back and Forward.
+Use stable object IDs and fall back gracefully for deleted objects or invalid tabs.
+Do not add history entries when editing or autosaving within the same view.
+
+## Automatic tile creation
+
+Creating a tile also creates a same-sized block containing that shared tile at the origin.
+Start image generation automatically using the tile title as its description.
+Apply generated pixels to the original tile so its block and usages update together.
+Keep the tile and block editable if generation fails, and allow retry from the tile editor.
+Do not overwrite pixels edited while generation was pending or recreate a deleted tile.
+Generating a new tile from a block editor also creates its matching reusable block.

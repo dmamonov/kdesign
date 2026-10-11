@@ -31,3 +31,49 @@
 .selected-instance{border-color:#819f65}.selected-instance small{overflow-wrap:anywhere}
 
 button.danger{color:#ffb6a6;border-color:#865346}button.danger:hover{background:#53332d}.dialog li{margin:10px 0;line-height:1.6}
+.world-map{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start}.world-map .panel{margin:0}.world-level .panel-bar span{font-size:10px;color:#99ad96}.open-level-map{display:block;width:100%;border:0;border-radius:0;padding:16px;background:#121b17}.level-map-preview{position:relative;width:100%;background:#202e25;overflow:hidden}.level-map-preview>svg{position:absolute;inset:0;width:100%;height:100%}.screen-grid{position:absolute;inset:0;pointer-events:none;z-index:1}.screen-grid span{position:absolute;border:1px solid #c5df9470;color:#d1e8ac;font:10px monospace;padding:4px;box-sizing:border-box}.world-links{display:flex;flex-wrap:wrap;gap:6px;padding:10px}.world-links:empty{display:none}
+
+.canvas-layout{display:grid;grid-template-columns:minmax(0,1fr) 254px;gap:18px;align-items:start}
+.canvas-main{min-width:0}
+.canvas-layout>.asset-tray{margin:0;min-width:0}
+.canvas-layout .asset-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px;max-height:70vh;overflow:auto}
+.canvas-layout .map-asset,.canvas-layout .map-asset .asset-card,.canvas-layout .map-asset select{width:100%;min-width:0}
+@media(max-width:1000px){.canvas-layout{grid-template-columns:minmax(0,1fr) 134px;gap:12px}.canvas-layout .asset-list{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.canvas-layout{grid-template-columns:minmax(0,1fr)}.canvas-layout .asset-list{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));max-height:35vh}}
+
+.tile-color-palette{margin-bottom:18px}
+.tile-color-palette h3{margin:6px 0 12px}
+.tile-color-palette .palette-scroll{overflow-x:auto;padding:3px;margin:0 -3px 10px}
+.tile-color-palette .palette{grid-template-columns:repeat(32,minmax(18px,1fr));gap:4px;margin:0;min-width:700px}
+.tile-color-palette .muted{display:inline;margin-left:12px}
+
+.tile-workspace .tile-color-palette{padding:10px 14px;margin-bottom:10px}
+.tile-workspace .tile-color-palette>.eyebrow,.tile-workspace .tile-color-palette>h3{display:inline-block;margin:0 12px 6px 0;vertical-align:middle}
+.tile-workspace .tile-color-palette>h3{font-size:12px}
+.tile-workspace .palette-scroll{margin-bottom:6px}
+.tile-workspace .palette{grid-template-columns:repeat(32,minmax(0,1fr));min-width:0;gap:3px}
+.tile-workspace .palette button{aspect-ratio:auto;height:clamp(14px,2.6vh,22px)}
+.tile-workspace .editor-layout{grid-template-columns:minmax(0,1fr) 252px;gap:12px;align-items:start}
+.tile-workspace .pixel-stage{padding:10px}
+.tile-workspace .pixel-grid{width:min(320px,calc(100dvh - 410px));min-width:160px}
+.tile-workspace .panel-bar{min-height:36px;padding:5px 10px}
+.tile-workspace .panel-caption{padding:7px 10px;font-size:9px}
+.tile-workspace .inspector{display:block}
+.tile-workspace .inspector .padded{padding:12px}
+.tile-workspace .inspector h3{display:none}
+.tile-workspace .inspector .field{margin:8px 0;gap:4px}
+.tile-workspace .inspector textarea{height:58px;min-height:42px;padding:6px;resize:vertical}
+.tile-workspace .inspector select{height:30px;padding:4px 6px}
+.tile-workspace .inspector .muted{font-size:10px;line-height:1.4;margin:7px 0 0}
+.tile-workspace .inspector .wide{padding:7px}
+.tile-workspace .inspector .panel+.panel{margin-top:10px}
+.tile-workspace .tile-preview{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tile-workspace .preview-tile{width:40px;height:40px;margin:0}
+@media(max-width:800px){.tile-workspace .editor-layout{grid-template-columns:minmax(0,1fr) 210px}}
+@media(max-width:650px){.tile-workspace .editor-layout{grid-template-columns:minmax(0,1fr)}.tile-workspace .palette{min-width:480px}}
+.tile-workspace .pixel-grid{width:min(320px,calc(100dvh - 470px))}
+.tile-workspace .inspector .field{margin:5px 0;gap:3px}
+.tile-workspace .inspector .reference-field{margin-bottom:6px}
+.tile-workspace .inspector .padded{padding:10px}
+.tile-workspace .inspector .field textarea{height:48px}
+.tile-workspace .preview-tile{width:32px;height:32px}

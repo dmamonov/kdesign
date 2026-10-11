@@ -3,10 +3,11 @@ package kdesign.web
 import kdesign.*
 import kotlin.math.*
 
-var mapTool="place"
+var mapTool="select"
+var mapClipboard: MapClipboard?=null
 var mapSelection: MapArea?=null
 var selectionOwner=""
-var replaceFill=false
+var replaceFill=true
 var hotkeyConflict: Pair<String,String>? = null
 var radialPage=0
 var radialX=0
@@ -15,11 +16,12 @@ var radialY=0
 @JsFun("() => document.getElementById('block-picker')?.remove()") external fun closeRadial()
 fun hotkey(id: String) = project.hotkeys.entries.find {it.value==id}?.key ?: ""
 fun mapAssetCard(id: String): String = "<div class='map-asset'>" + button("<span class='asset-thumb'>${svg(id)}</span><span>${text(project.name(id))}</span><kbd>${hotkey(id).ifBlank {"—"}}</kbd>","asset",id,cls="asset-card ${if(assetBrush==id) "selected" else ""}") +
-    "<select aria-label='Hotkey for ${text(project.name(id))}' data-change='bind-hotkey' data-id='${esc(id)}'><option value=''>No hotkey</option>${("1234567890").map { key -> "<option value='$key' ${if(hotkey(id)==key.toString()) "selected" else ""}>$key</option>" }.joinToString("")}</select></div>"
-fun mapToolbar() = "<div class='map-tools'>"+listOf("inspect" to "I · Inspect", "place" to "B · Place", "select" to "V · Select area", "erase" to "E · Remove").joinToString("") {(mode,label)->button(label,"map-tool",mode,cls="tool ${if(mapTool==mode) "active" else ""}")}+button("Space · Blocks","radial-open",cls="tool")+"</div>"
+    "<select aria-label='Hotkey for ${text(project.name(id))}' data-change='bind-hotkey' data-id='${esc(id)}'><option value=''>No hotkey</option>${("1234567890abcdefghijklmnopqrstuvwxyz").map { key -> "<option value='$key' ${if(hotkey(id)==key.toString()) "selected" else ""}>$key</option>" }.joinToString("")}</select></div>"
+fun mapToolbar() = "<div class='map-tools'>"+button("Copy","map-copy",cls="tool")+button("Paste","map-paste",cls="tool")+button("Space · Blocks","radial-open",cls="tool")+"</div>"
+
 fun selectionBar(): String {
     val area=mapSelection
-    return "<div class='selection-bar'><span id='selection-label'>${area?.let {"${it.width} × ${it.height} px selected"} ?: "V: drag to select an area"}</span><label><select aria-label='Fill behavior' data-change='fill-behavior'><option value='empty' ${if(!replaceFill) "selected" else ""}>Fill empty space</option><option value='replace' ${if(replaceFill) "selected" else ""}>Replace contained blocks</option></select></label>${button("F · Fill area","fill-area",cls="tiny")}${button("Delete · Clear","clear-area",cls="tiny")}${button("Esc · Deselect","deselect",cls="tiny")}</div><p class='fill-help'>Fill: ${text(project.name(assetBrush))}. ${if(replaceFill) "Replaces fully contained blocks of other types." else "Keeps existing placements and fills empty space."} Whole blocks only; partial boundary overlaps stay intact.</p>"
+    return "<div class='selection-bar'><span id='selection-label'>${area?.let {"${it.width} × ${it.height} px selected"} ?: "Click a cell or drag an area"}</span><label><select aria-label='Fill behavior' data-change='fill-behavior'><option value='empty' ${if(!replaceFill) "selected" else ""}>Fill empty space</option><option value='replace' ${if(replaceFill) "selected" else ""}>Replace contained blocks</option></select></label>${button("Fill area","fill-area",cls="tiny")}${button("Delete · Clear","clear-area",cls="tiny")}${button("Esc · Deselect","deselect",cls="tiny")}</div><p class='fill-help'>Fill: ${text(project.name(assetBrush))}. ${if(replaceFill) "Replaces fully contained blocks of other types." else "Keeps existing placements and fills empty space."} Whole blocks only; partial boundary overlaps stay intact.</p>"
 }
 fun selectionOverlay(b: Block): String = mapSelection?.let {"<div class='area-selection' style='left:${it.x*100.0/b.width}%;top:${it.y*100.0/b.height}%;width:${it.width*100.0/b.width}%;height:${it.height*100.0/b.height}%'></div>"} ?: ""
 fun openRadial(position: String="") {
@@ -52,7 +54,7 @@ fun handleMapAction(kind: String,id: String,v: String): Boolean {
         "bind-hotkey" -> assignHotkey(id,v)
         "map-key" -> {
             if(v=="assign") {require(assetBrush.isNotBlank()) {"Choose an asset first"};assignHotkey(assetBrush,id)}
-            else { val target=project.hotkeys[id] ?: return true;require(target in project.compositionAssets(currentBlock()!!.id)) {"Hotkey $id is not available for this canvas"};assetBrush=target;mapTool="place" }
+            else { val target=project.hotkeys[id] ?: return true;require(target in project.compositionAssets(currentBlock()!!.id)) {"Hotkey $id is not available for this canvas"};message="";assetBrush=target;val area=mapSelection ?: error("Select a cell or area first");change {it.fillArea(currentBlock()!!.id,target,area,snap,true,::uuid)} }
         }
         "map-select" -> {
             val b=currentBlock()!!;val coords=id.split(',').map {it.toInt()}
@@ -60,14 +62,28 @@ fun handleMapAction(kind: String,id: String,v: String): Boolean {
             mapSelection=MapArea(x,y,min(b.width,max(coords[0],coords[2])+snap)-x,min(b.height,max(coords[1],coords[3])+snap)-y)
             selectionOwner=b.id
         }
+        "map-copy", "map-cut" -> {
+            val b=currentBlock()!!;val area=mapSelection ?: error("Select a cell or area first")
+            val copied=project.copyArea(b.id,area)
+            require(copied.placements.isNotEmpty()) {"Select at least one whole item to copy"}
+            if(kind=="map-cut") change {it.clearArea(b.id,area)}
+            mapClipboard=copied;message="Copied ${copied.placements.size} items"
+        }
+        "map-paste" -> {
+            val b=currentBlock()!!;val area=mapSelection ?: error("Select a destination cell first")
+            val copied=mapClipboard ?: error("Copy an area first")
+            change {it.pasteArea(b.id,copied,area.x,area.y,::uuid)}
+            mapSelection=MapArea(area.x,area.y,copied.width,copied.height)
+            message="Pasted ${copied.placements.size} items"
+        }
         "fill-behavior" -> replaceFill=v=="replace"
-        "fill-area" -> {val b=currentBlock()!!;val area=mapSelection ?: error("Drag to select an area first");change {it.fillArea(b.id,assetBrush,area,snap,replaceFill,::uuid)}}
-        "clear-area" -> {val b=currentBlock()!!;val area=mapSelection ?: error("Drag to select an area first");change {it.clearArea(b.id,area)}}
+        "fill-area" -> {message="";val b=currentBlock()!!;val area=mapSelection ?: error("Drag to select an area first");change {it.fillArea(b.id,assetBrush,area,snap,replaceFill,::uuid)}}
+        "clear-area" -> {message="";val b=currentBlock()!!;val area=mapSelection ?: error("Drag to select an area first");change {it.clearArea(b.id,area)}}
         "deselect" -> {mapSelection=null;closeRadial()}
         "radial-open" -> {openRadial(id);return true}
         "radial-page" -> {radialPage+=id.toInt();openRadial();return true}
         "radial-close" -> {closeRadial();return true}
         else -> return false
     }
-    render();updateSaveStatus();return true
+    render();updateSaveStatus();focusMap();return true
 }

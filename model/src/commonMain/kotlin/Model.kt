@@ -37,7 +37,7 @@ val fieldLabels = listOf("Description", "Player mechanics", "Player goals", "Des
         require(version == 1) { "Unsupported project version" }
         val ids = tiles.map { it.id } + blocks.map { it.id } + levels.map { it.id } + concepts.map { it.id }
         require(ids.all { it.isNotBlank() } && ids.distinct().size == ids.size) { "Entity IDs must be unique and nonempty" }
-        require(hotkeys.keys.all {it.length==1 && it[0] in '0'..'9'} && hotkeys.values.all {id -> tiles.any {it.id==id} || blocks.any {it.id==id}} && hotkeys.values.distinct().size==hotkeys.size) { "Invalid asset hotkeys" }
+        require(hotkeys.keys.all {it.length==1 && (it[0] in '0'..'9' || it[0] in 'a'..'z')} && hotkeys.values.all {id -> tiles.any {it.id==id} || blocks.any {it.id==id}} && hotkeys.values.distinct().size==hotkeys.size) { "Invalid asset hotkeys" }
         textReferences().forEach { require(it.targetId in ids) { "Missing text reference [[${it.targetId}]] in ${it.field}" } }
         tiles.forEach { require(it.size in listOf(8, 16) && it.pixels.size == it.size * it.size && it.pixels.all { p -> p in -1..63 }) { "Invalid tile ${it.name}" } }
         blocks.forEach { b ->

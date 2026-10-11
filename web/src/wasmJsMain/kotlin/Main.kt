@@ -32,6 +32,7 @@ var usageId = ""
 var highlightPath = emptyList<String>()
 val tableErrors = mutableSetOf<String>()
 val history = mutableListOf<Project>()
+var tileStrokeChanged = false
 fun esc(s: String) = s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\"","&quot;").replace("'","&#39;")
 fun attr(action: String, id: String = "", v: String = "") = "data-action='${esc(action)}' data-id='${esc(id)}' data-value='${esc(v)}'"
 fun button(label: String, action: String, id: String = "", v: String = "", cls: String = "") = "<button class='$cls' ${attr(action,id,v)}>$label</button>"
@@ -62,23 +63,24 @@ fun render() {
     if(!loaded) { mount("<div class='loading'>K<span>design</span><p>${text(message.ifBlank { "Opening your adventure workshop…" })}</p>${button("Retry connection","reload")}</div>"); return }
     publishReferenceObjects()
     renderShell()
+    syncRoute()
 }
 fun tileView(t: Tile): String = """
-<div class='editor-layout'><section class='panel'><div class='panel-bar'><span>Tile editor <small>${t.size} × ${t.size}</small></span><div>${button("✎ Pencil","pencil",cls=if(!eraser) "tool active" else "tool")}${button("◇ Eraser","eraser",cls=if(eraser) "tool active" else "tool")}</div></div><div class='pixel-stage'><div class='pixel-grid' style='grid-template-columns:repeat(${t.size},1fr)'>${t.pixels.mapIndexed { i,c -> "<button id='px-$i' aria-label='Pixel ${i%t.size+1}, ${i/t.size+1}' ${attr("paint",i.toString())} style='background-color:${if(c<0) "transparent" else palette[c]}'></button>" }.joinToString("")}</div></div><div class='panel-caption'>Click or drag to draw · transparency is preserved · shared tiles update every usage</div></section>
-<aside class='inspector'><section class='panel padded'><div class='eyebrow'>COLOR PALETTE</div><h3>Nintendo Entertainment System</h3><div class='palette'>${palette.mapIndexed { i,c -> "<button title='Color $i · $c' aria-label='Color $i' class='${if(brush==i&&!eraser) "chosen" else ""}' ${attr("color",i.toString())} style='background:$c'></button>" }.joinToString("")}</div>${button("▧ Transparent","eraser",cls="wide")}<p class='muted'>64 palette entries + transparency.<br>Selected: ${if(eraser) "transparent" else palette[brush]}</p></section>${generationPanel()}<section class='panel padded'><div class='eyebrow'>LIVE PREVIEW</div><div class='preview-tile'>${svg(t.id)}</div></section></aside></div>
+<div class='tile-workspace'>
+<section class='panel padded tile-color-palette'><div class='eyebrow'>COLOR PALETTE</div><h3>Nintendo Entertainment System</h3><div class='palette-scroll'><div class='palette'>${palette.mapIndexed { i,c -> "<button title='Color $i · $c' aria-label='Color $i' class='${if(brush==i&&!eraser) "chosen" else ""}' ${attr("color",i.toString())} style='background:$c'></button>" }.joinToString("")}</div></div>${button("▧ Transparent","eraser",cls="tiny")}<p class='muted'>64 palette entries + transparency. · Selected: ${if(eraser) "transparent" else palette[brush]}</p></section>
+<div class='editor-layout'><section class='panel'><div class='panel-bar'><span>Tile editor <small>${t.size} × ${t.size}</small></span><div>${button("↶ Undo","undo",cls="tool")}${button("✎ Pencil","pencil",cls=if(!eraser) "tool active" else "tool")}${button("◇ Eraser","eraser",cls=if(eraser) "tool active" else "tool")}</div></div><div class='pixel-stage'><div class='pixel-grid' style='grid-template-columns:repeat(${t.size},1fr)'>${t.pixels.mapIndexed { i,c -> "<button id='px-$i' aria-label='Pixel ${i%t.size+1}, ${i/t.size+1}' ${attr("paint",i.toString())} style='background-color:${if(c<0) "transparent" else palette[c]}'></button>" }.joinToString("")}</div></div><div class='panel-caption'>Click or drag to draw · transparency is preserved · shared tiles update every usage</div></section>
+<aside class='inspector'>${generationPanel()}<section class='panel padded tile-preview'><div class='eyebrow'>LIVE PREVIEW</div><div class='preview-tile'>${svg(t.id)}</div></section></aside></div>
+</div>
 """
 fun generationPanel() = """<section class='panel padded'><div class='eyebrow'>✦ GENERATE WITH OPENAI</div><h3>From an idea to pixels</h3>${field("prompt","Describe your tile", generationPrompt, true)}<label class='field'>Generated tile size<select id='generation-size'><option value='16' ${if(generationSize=="16") "selected" else ""}>16 × 16 pixels</option><option value='8' ${if(generationSize=="8") "selected" else ""}>8 × 8 pixels</option></select></label>${button(if(generating) "Generating…" else "✦ Generate tile","generate",cls="primary wide")}<p class='muted'>${if(generationAvailable) "Generates an image, then converts it to an editable NES tile. May take a few minutes. For blocks, places it in the first available cell." else "Set OPENAI_API_KEY on the server to enable generation."}</p></section>"""
 fun canvasView(b: Block, l: Level?): String {
     val assets=project.compositionAssets(b.id)
     if(selectionOwner!=b.id) {mapSelection=null;selectionOwner=b.id}
     if(assetBrush !in assets) assetBrush=assets.firstOrNull() ?: ""
-    return """<div class='editor-layout'><div><section class='panel'><div class='panel-bar'><span>${if(l!=null) "Level composition" else "Block composition"}<small><select class='snap-select' aria-label='Grid size' data-change='snap'><option value='16' ${if(snap==16) "selected" else ""}>16 px grid</option><option value='8' ${if(snap==8) "selected" else ""}>8 px grid</option></select></small></span>${mapToolbar()}</div>
-    <div class='scene-scroll'><div class='scene ${if(l!=null) "forest" else ""}' tabindex='0' aria-label='Map canvas' data-map-tool='$mapTool' data-width='${b.width}' data-height='${b.height}' data-snap='$snap' style='width:${maxOf(320,b.width*2)}px;height:${maxOf(320,b.width*2)*b.height/b.width}px'>${svg(b.id,b.width,b.height,true)}${selectionOverlay(b)}<div class='placement-grid' style='grid-template-columns:repeat(${(b.width+snap-1)/snap},${snap*100.0/b.width}%);grid-template-rows:repeat(${(b.height+snap-1)/snap},${snap*100.0/b.height}%)'>${(0 until (b.height+snap-1)/snap).joinToString("") { y -> (0 until (b.width+snap-1)/snap).joinToString("") { x -> "<button title='${if(mapTool=="inspect") "Inspect" else if(mapTool=="erase") "Remove" else if(mapTool=="select") "Select" else "Place ${text(project.name(assetBrush))}"} at ${x*snap},${y*snap}' aria-label='Cell $x,$y' ${attr("place","${x*snap},${y*snap}")}></button>" } }}</div></div></div><div class='panel-caption'><span>${if(mapTool=="inspect") "Inspect a placed instance" else if(mapTool=="erase") "Remove mode" else if(mapTool=="select") "Select area" else "Placing: ${text(project.name(assetBrush))}"}</span><span>Right-click / Space: picker · Shift + digit: bind brush</span></div>${selectionBar()}</section>
-    <section class='panel asset-tray'><div class='panel-bar'>${if(b.kind=="block") "TILE PALETTE" else "BLOCK PALETTE"}<small>Shared definitions</small></div><div class='asset-list'>${assets.joinToString("") { mapAssetCard(it) }}</div></section>
-    <section class='panel padded'><div class='section-title'><h3>Placed instances</h3><span class='muted'>${b.children.size} placements</span></div><div class='instances'>${b.children.joinToString("") { c -> "<div class='instance ${if(highlightPath.firstOrNull()==c.id) "highlight" else ""}'><span><b>${text(project.name(c.assetId))}</b><small>${esc(c.id)} · (${c.x}, ${c.y})</small></span><div>${button("Open definition","open",c.assetId,cls="tiny")}${button("Usages","usages",c.assetId,cls="tiny")}${button("×","remove",c.id,cls="tiny")}</div></div>" }}</div></section></div>
-    <aside class='inspector'>${placementInspector(b)}<section class='panel padded'><div class='eyebrow'>${if(l!=null) "LEVEL AT A GLANCE" else "REUSABLE DEFINITION"}</div><h3>${rich(l?.title ?: b.name)}</h3><p class='muted'>${rich(l?.notes?.get("description") ?: "Compose smaller assets into a reusable part of your world.")}</p><div class='stat-line'><span>Space</span><b>${b.width} × ${b.height}</b></div><div class='stat-line'><span>Nested instances</span><b>${b.children.size}</b></div><div class='stat-line'><span>Sublevels</span><b>${project.levels.count { it.parentId==l?.id && l!=null }}</b></div>${if(l!=null) button("Edit design brief →","tab","Design brief",cls="wide") else button("Edit properties →","tab","Properties",cls="wide")}</section>
-    ${if(l!=null) "<section class='panel padded'><div class='eyebrow'>PLAYER GOALS</div><p>${rich(l.notes["playerGoals"] ?: "No goals yet")}</p><div class='eyebrow'>EMOTIONAL BAITS</div><p class='muted'>${rich(l.notes["emotionalBaits"] ?: "No emotional baits yet")}</p></section>" else if(b.kind=="block") generationPanel() else ""}
-    <section class='panel padded'><div class='eyebrow'>CONNECTIONS</div><h3>Doors to other places</h3>${b.portals.joinToString("") { p -> button("↗ ${text(p.label)}<small>${text(project.name(p.targetLevelId))}</small>","portal-go",p.targetLevelId,p.targetPath.joinToString("/"),"portal-link") }.ifBlank { "<p class='muted'>No outgoing portals on this definition.</p>" }}${if(b.kind=="meta") button("+ Add portal","new",v="Portal",cls="wide") else ""}</section></aside></div>"""
+    return """<div class='canvas-layout'><div class='canvas-main'><section class='panel'><div class='panel-bar'><span>${if(l!=null) "Level composition" else "Block composition"}<small><select class='snap-select' aria-label='Grid size' data-change='snap'><option value='16' ${if(snap==16) "selected" else ""}>16 px grid</option><option value='8' ${if(snap==8) "selected" else ""}>8 px grid</option></select></small></span>${mapToolbar()}</div>
+    <div class='scene-scroll'><div class='scene ${if(l!=null) "forest" else ""}' tabindex='0' aria-label='Map canvas' data-map-tool='$mapTool' data-width='${b.width}' data-height='${b.height}' data-snap='$snap' style='width:${maxOf(320,b.width*2)}px;height:${maxOf(320,b.width*2)*b.height/b.width}px'>${svg(b.id,b.width,b.height,true)}${if(l!=null) screenGrid(b) else ""}${selectionOverlay(b)}<div class='placement-grid' style='grid-template-columns:repeat(${(b.width+snap-1)/snap},${snap*100.0/b.width}%);grid-template-rows:repeat(${(b.height+snap-1)/snap},${snap*100.0/b.height}%)'>${(0 until (b.height+snap-1)/snap).joinToString("") { y -> (0 until (b.width+snap-1)/snap).joinToString("") { x -> "<button title='${if(mapTool=="inspect") "Inspect" else if(mapTool=="erase") "Remove" else if(mapTool=="select") "Select" else "Place ${text(project.name(assetBrush))}"} at ${x*snap},${y*snap}' aria-label='Cell $x,$y' ${attr("place","${x*snap},${y*snap}")}></button>" } }}</div></div></div><div class='panel-caption'><span>${if(mapTool=="inspect") "Inspect a placed instance" else if(mapTool=="erase") "Remove mode" else if(mapTool=="select") "Select area" else "Placing: ${text(project.name(assetBrush))}"}</span><span>Drag: select · Ctrl/⌘ C/X/V: copy/cut/paste · Space: picker · Shift + letter/digit: bind brush</span></div>${selectionBar()}</section>
+    </div><aside class='panel asset-tray'><div class='panel-bar'>${if(b.kind=="block") "TILE PALETTE" else "BLOCK PALETTE"}<small>Shared definitions</small></div><div class='asset-list'>${assets.joinToString("") { mapAssetCard(it) }}</div></aside>
+    </div>"""
 }
 fun briefView(l: Level) = "<section class='panel padded'><div class='section-title'><div><h3>Level design brief</h3><p class='muted'>The intent behind the space.</p></div><span class='muted'>Changes save automatically</span></div><div class='form-grid'>${field("title","Title",l.title)}<label class='field'>Parent level<select id='parent'><option value=''>Independent space</option>${project.levels.filter {it.id!=l.id}.joinToString(""){ "<option value='${esc(it.id)}' ${if(it.id==l.parentId) "selected" else ""}>${text(it.title)}</option>" }}</select></label>${levelFields.mapIndexed { i,k -> field(k,fieldLabels[i],l.notes[k] ?: "",true) }.joinToString("")}</div></section>"
 fun tableView() = "<section class='panel table-scroll'><div class='panel-bar'>Level overview <small>Edit any cell · changes save automatically as you type</small></div><table class='editable-levels'><thead><tr><th>Level / space</th>${fieldLabels.joinToString(""){"<th>$it</th>"}}</tr></thead><tbody>${project.levels.joinToString(""){ l -> "<tr><td>${tableField(l,"title","Title",l.title)}${button("Open level →","select",l.id,cls="text-link")}<small>${l.parentId?.let { "↳ ${text(project.name(it))}" } ?: "Independent space"}</small></td>${levelFields.mapIndexed { i,k -> "<td>${tableField(l,k,fieldLabels[i],l.notes[k] ?: "")}</td>" }.joinToString("")}</tr>" }}</tbody></table></section>"
@@ -101,7 +103,7 @@ fun modalView(): String {
         "Project" -> field("new-name","Project title",project.title)
         "Portal" -> field("new-name","Portal label","Enter passage") + "<label class='field'>Destination space and instance<select id='portal-destination'>${portalDestinationOptions()}</select></label><p class='muted'>Choose a level root or a named meta-block occurrence. Paths distinguish repeated instances.</p>"
         "Concepts", "Edit concept" -> field("new-name","Name",concept?.takeIf {modal=="Edit concept"}?.name ?: "") + "<label class='field'>Category<select id='category' data-change='category'>${categories.keys.joinToString(""){ "<option ${if(it==(if(modal=="Edit concept") concept?.category else conceptCategory)) "selected" else ""}>${text(it)}</option>" }}</select></label><label class='field'>Type<select id='concept-type'>${categories[conceptCategory]!!.joinToString(""){"<option ${if(it==concept?.type) "selected" else ""}>${text(it)}</option>"}}</select></label>"+field("concept-description","Description",concept?.takeIf {modal=="Edit concept"}?.description ?: "",true)
-        else -> field("new-name","Name") + when(modal) { "Tiles"->"<label class='field'>Tile size<select id='new-size'><option value='16'>16 × 16 pixels</option><option value='8'>8 × 8 pixels</option></select></label>"; else -> "<div class='form-grid'>${field("new-width","Width (pixels)",if(modal=="Levels") "512" else "32")}${field("new-height","Height (pixels)",if(modal=="Levels") "192" else "32")}</div>" } + if(modal=="Levels") "<label class='field'>Parent level<select id='new-parent'><option value=''>Independent space</option>${project.levels.joinToString(""){"<option value='${esc(it.id)}'>${text(it.title)}</option>"}}</select></label>" else ""
+        else -> field("new-name","Name") + when(modal) { "Tiles"->"<label class='field'>Tile size<select id='new-size'><option value='16'>16 × 16 pixels</option><option value='8'>8 × 8 pixels</option></select></label>"; else -> "<div class='form-grid'>${field("new-width","Width (pixels)",if(modal=="Levels") screenWidth.toString() else "32")}${field("new-height","Height (pixels)",if(modal=="Levels") screenHeight.toString() else "32")}</div>" } + if(modal=="Levels") "<label class='field'>Parent level<select id='new-parent'><option value=''>Independent space</option>${project.levels.joinToString(""){"<option value='${esc(it.id)}'>${text(it.title)}</option>"}}</select></label>" else ""
     } + "<div class='dialog-actions'>${if(modal in listOf("Edit concept","Project")) button("Done","close-modal",cls="primary") else button("Cancel","close-modal")+button("Create","create",cls="primary")}</div></section></div>"
 }
 var conceptCategory = "Gates"
@@ -118,7 +120,7 @@ fun select(id: String) {
 
 fun load() {
     request("GET","/api/files?path=project.json","") { ok,text ->
-        try { check(ok) {text}; project=json.decodeFromString<Project>(text); project.validate(); loaded=true; selected="";tab="Table"; message="" }
+        try { check(ok) {text}; project=json.decodeFromString<Project>(text); project.validate(); loaded=true; selected="";tab="World map"; message="";restoreRoute() }
         catch(e: Exception) {message="Could not load project: ${e.message}"}
         render()
     }
@@ -129,7 +131,14 @@ fun create() {
     val id=uuid()
     when(modal) {
         "Project" -> change {it.copy(title=name)}
-        "Tiles" -> { val size=value("new-size").toInt(); change {it.copy(tiles=it.tiles+Tile(id,name,size))};select(id) }
+        "Tiles" -> {
+            require(!generating) {"Wait for the current generation to finish before creating another tile"}
+            val size=value("new-size").toInt()
+            val tile=Tile(id,name,size)
+            change {it.addTileWithBlock(tile,uuid(),uuid())};select(id);modal=""
+            generationPrompt=name;generationSize=size.toString()
+            if(generationAvailable) generate(tile,name) else message="Tile and block created. Automatic generation needs OPENAI_API_KEY on the server."
+        }
         "Blocks", "Meta blocks", "Levels" -> {
             val b=Block(id,name,if(modal=="Blocks") "block" else "meta",value("new-width").toInt(),value("new-height").toInt())
             val l=if(modal=="Levels") Level(uuid(),name,id,value("new-parent").ifBlank {null}) else null
@@ -140,24 +149,30 @@ fun create() {
     }
     modal=""
 }
-fun generate() {
+fun generate(existing: Tile? = currentTile(), description: String? = null) {
     if(generating) return
     require(generationAvailable) { "Generation needs OPENAI_API_KEY. Set it in the server environment and restart." }
-    val prompt=project.displayText(value("prompt")); require(prompt.isNotBlank()) {"Describe the tile you want to generate"}
-    val targetBlock=currentBlock()?.takeIf {it.kind=="block"}; val size=value("generation-size").toIntOrNull() ?: currentTile()?.size ?: 16
+    val prompt=project.displayText(description ?: value("prompt")); require(prompt.isNotBlank()) {"Describe the tile you want to generate"}
+    val targetBlock=currentBlock()?.takeIf {it.kind=="block"}; val size=existing?.size ?: value("generation-size").toIntOrNull() ?: 16
     generating=true; message="Generating editable pixels…"; render()
     request("POST","/api/generate",buildJsonObject {put("description",prompt);put("size",size)}.toString()) {ok,text ->
         generating=false
         try {
             check(ok) {runCatching {json.parseToJsonElement(text).jsonObject["error"]?.jsonPrimitive?.content}.getOrNull() ?: "Generation request failed. Check the server connection."}; val obj=json.parseToJsonElement(text).jsonObject
-            val t=Tile(uuid(),obj["name"]!!.jsonPrimitive.content,size,obj["pixels"]!!.jsonArray.map {it.jsonPrimitive.int})
+            val pixels=obj["pixels"]!!.jsonArray.map {it.jsonPrimitive.int}
+            if(existing!=null) {
+                change {it.applyGeneratedPixels(existing,pixels)}
+                message="Tile generated. Its block and all usages have updated automatically."
+                render();return@request
+            }
+            val t=Tile(uuid(),obj["name"]!!.jsonPrimitive.content,size,pixels)
             var placed=false
             change { p ->
                 val blocks=p.blocks.map { b -> if(b.id!=targetBlock?.id) b else {
                     val spot=(0..b.height-size step size).flatMap {y->(0..b.width-size step size).map {x->x to y}}.firstOrNull {(x,y)-> b.children.none {c-> val (w,h)=p.size(c.assetId); x<c.x+w && x+size>c.x && y<c.y+h && y+size>c.y}}
                     if(spot==null) b else {placed=true;b.copy(children=b.children+Placement(uuid(),t.id,spot.first,spot.second))}
                 } }
-                p.copy(tiles=p.tiles+t,blocks=blocks)
+                p.copy(blocks=blocks).addTileWithBlock(t,uuid(),uuid())
             }
             if(targetBlock==null) select(t.id)
             message=if(targetBlock!=null&&!placed) "Tile created in Tiles. The block has no free cell." else "Generated tile added. Saving automatically."
@@ -168,10 +183,12 @@ fun generate() {
 fun action(kind: String, id: String, v: String) {
     try {
         if(tableErrors.isNotEmpty() && kind !in setOf("form-edit", "table-edit", "save", "undo", "tree-search", "category")) {
+            if(kind=="url-navigation") {replaceRoute=true;syncRoute()}
             showError("Correct the invalid input before leaving this editor, or use Undo to discard it.")
             return
         }
         if(kind in setOf("section", "category-root", "select", "open", "reference-open", "text-usage-open", "usage-open", "portal-go", "instance-open")) rememberLocation()
+        if(kind=="url-navigation") {if(loaded) {restoreRoute();render()};return}
         if(handleMapAction(kind,id,v)) return
         when(kind) {
             "delete-request" -> {deletingId=id}
@@ -213,14 +230,12 @@ fun action(kind: String, id: String, v: String) {
             "pencil" -> eraser=false
             "eraser" -> eraser=true
             "color" -> {brush=id.toInt();eraser=false}
-            "asset" -> {assetBrush=id;eraser=false;mapTool="place";closeRadial()}
-            "stroke" -> {checkpoint();return}
-            "paint" -> { val t=currentTile() ?: return; val index=id.toInt(); val c=if(eraser) -1 else brush; project=project.copy(tiles=project.tiles.map {if(it.id==t.id) it.copy(pixels=it.pixels.toMutableList().also {it[index]=c}) else it});changed();pixel("px-$index",if(c<0) "transparent" else palette[c]);return }
-            "stroke-end" -> Unit
+            "asset" -> {assetBrush=id;eraser=false;mapTool="select";closeRadial()}
+            "stroke" -> {tileStrokeChanged=false;return}
+            "paint" -> { val t=currentTile() ?: return; val index=id.toInt(); val c=if(eraser) -1 else brush; if(t.pixels[index]==c) return; if(!tileStrokeChanged) {checkpoint();tileStrokeChanged=true}; project=project.copy(tiles=project.tiles.map {if(it.id==t.id) it.copy(pixels=it.pixels.toMutableList().also {it[index]=c}) else it});changed();pixel("px-$index",if(c<0) "transparent" else palette[c]);return }
+            "stroke-end" -> {tileStrokeChanged=false}
             "undo" -> if(tableErrors.isNotEmpty()) {tableErrors.clear()} else if(history.isNotEmpty()) {project=history.removeAt(history.lastIndex);message="Change undone";changed();if(selected.isNotEmpty() && selected !in project.objectIds()) {selected="";tab=if(section=="Levels") "Table" else "Library"}}
-            "place" -> { if(mapTool=="select") return;
-                if(mapTool=="inspect") {val (x,y)=id.split(',').map {it.toInt()};val placement=currentBlock()!!.children.lastOrNull {val (w,h)=project.size(it.assetId);x>=it.x&&x<it.x+w&&y>=it.y&&y<it.y+h};highlightPath=listOfNotNull(placement?.id);render();return}
-                val b=currentBlock()!!; val (x,y)=id.split(',').map {it.toInt()}; change {p->p.copy(blocks=p.blocks.map { if(it.id!=b.id) it else if(mapTool=="erase") it.copy(children=it.children.filterNot {c -> val (w,h)=p.size(c.assetId); x>=c.x&&x<c.x+w&&y>=c.y&&y<c.y+h }) else {require(assetBrush.isNotBlank()){ "Create a child asset first" };it.copy(children=it.children+Placement(uuid(),assetBrush,x,y))} })} }
+            "place" -> {handleMapAction("map-select","$id,$id","");return}
             "remove" -> {val b=currentBlock()!!;change {p->p.copy(blocks=p.blocks.map {if(it.id==b.id) it.copy(children=it.children.filterNot {it.id==id}) else it})}}
             "new" -> {modal=v;message="";conceptCategory=id.ifBlank {"Gates"}}
             "create" -> create()

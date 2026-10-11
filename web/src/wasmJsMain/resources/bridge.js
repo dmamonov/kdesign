@@ -1,5 +1,11 @@
 // Browser-only IO. All application state, rendering, validation and editing live in Kotlin/Wasm.
 window.designer = {
+  syncRoute(route, replace) {
+    const params=new URLSearchParams();
+    for(const [key,value] of Object.entries(JSON.parse(route))) if(value) params.set(key,value);
+    const hash='#'+params.toString();
+    if(location.hash!==hash) history[replace?'replaceState':'pushState'](null,'',location.pathname+location.search+hash);
+  },
   mount(html) {
     document.getElementById('reference-picker')?.remove();document.getElementById('block-picker')?.remove();
     const view=document.querySelector('main')?.dataset.view;
@@ -30,6 +36,8 @@ window.designer = {
   },
   bind(action) {
     window.designer.bindMap(action);
+    window.addEventListener('popstate',()=>action('url-navigation','',''));
+    window.addEventListener('hashchange',()=>action('url-navigation','',''));
     let painting = false;
     let referenceEditor = null, referenceStart = 0, referenceEnd = 0, activeChoice = 0;
     const commitTable = editor => {
@@ -102,10 +110,18 @@ window.designer = {
     document.addEventListener('change', e => { const el=e.target; if(el.dataset.change) action(el.dataset.change,el.dataset.id??'',el.value);else if(el.id && el.tagName==='SELECT') action('form-edit',el.id,el.value); });
     document.addEventListener('pointerdown', e => {
       const el=e.target.closest('[data-action="paint"]');
-      if(el) { e.preventDefault(); painting=true; action('stroke','',''); action('paint',el.dataset.id,''); }
+      if(el && e.button===0) { e.preventDefault(); el.focus({preventScroll:true}); painting=true; action('stroke','',''); action('paint',el.dataset.id,''); }
     });
     document.addEventListener('pointerover', e => { const el=e.target.closest('[data-action="paint"]'); if(painting && el) action('paint',el.dataset.id,''); });
-    document.addEventListener('pointerup', () => { if(painting) { painting=false; action('stroke-end','',''); } });
+    const endStroke=()=>{if(painting){painting=false;action('stroke-end','','');}};
+    document.addEventListener('pointerup',endStroke);
+    document.addEventListener('pointercancel',endStroke);
+    window.addEventListener('blur',endStroke);
+    document.addEventListener('keydown',e=>{
+      if(document.querySelector('.tile-workspace') && (e.ctrlKey||e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase()==='z' && !e.target.closest('input,textarea,select,[contenteditable],.overlay')) {
+        e.preventDefault();painting=false;action('undo','','');
+      }
+    });
     document.addEventListener('keydown', e => {
       const dialog=document.querySelector('.overlay [role="dialog"]');
       if(dialog && e.key==='Tab') {

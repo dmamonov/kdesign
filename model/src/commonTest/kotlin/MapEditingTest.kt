@@ -39,4 +39,18 @@ class MapEditingTest {
     @Test fun rejectsAnAssetTooLargeForSelection() {
         assertFails {sampleProject().fillArea("meta-clearing","block-mushroom",MapArea(0,0,8,8),8,false,::id)}
     }
+    @Test fun letterHotkeysAndClipboardKeepSharedDefinitions() {
+        val p=sampleProject().copy(hotkeys=mapOf("f" to "block-mushroom"));p.validate()
+        val filled=p.fillArea("meta-clearing","block-mushroom",MapArea(0,0,32,16),16,true,::id)
+        val copied=filled.copyArea("meta-clearing",MapArea(0,0,32,16))
+        assertEquals(2,copied.placements.size)
+        val pasted=filled.pasteArea("meta-clearing",copied,64,0,::id)
+        val items=pasted.blocks.first {it.id=="meta-clearing"}.children.filter {it.y==0 && it.x in 64..95}
+        assertEquals(listOf(64,80),items.map {it.x})
+        assertTrue(items.all {it.assetId=="block-mushroom"})
+        assertTrue(items.none {item->copied.placements.any {it.id==item.id}})
+        assertEquals(p.tiles,pasted.tiles)
+        assertFails {filled.pasteArea("meta-clearing",copied,512,0,::id)}
+        assertFails {filled.pasteArea("block-mushroom",copied,0,0,::id)}
+    }
 }
