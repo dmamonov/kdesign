@@ -125,6 +125,12 @@ window.designer = {
     });
     document.addEventListener('keydown', e => {
       const dialog=document.querySelector('.overlay [role="dialog"]');
+      if(dialog && dialog.contains(e.target) && e.key==='Enter' && !e.defaultPrevented &&
+          !e.isComposing && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey &&
+          !e.target.closest('textarea,select,button,[contenteditable]')) {
+        const create=dialog.querySelector('button[data-action="create"]');
+        if(create && !create.disabled) {e.preventDefault();create.click();return;}
+      }
       if(dialog && e.key==='Tab') {
         const items=[...dialog.querySelectorAll('button,input,textarea,select,a[href]')].filter(el=>!el.disabled);
         if(items.length && ((e.shiftKey && e.target===items[0]) || (!e.shiftKey && e.target===items[items.length-1]))) {e.preventDefault();items[e.shiftKey?items.length-1:0].focus();}

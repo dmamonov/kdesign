@@ -193,6 +193,11 @@ fun action(kind: String, id: String, v: String) {
         if(handleTileSelection(kind,id)) return
         if(handleMapAction(kind,id,v)) return
         when(kind) {
+            "cleanup-empty-blocks" -> {
+                val before=project.blocks.size
+                change {it.cleanupEmptyBlocks()}
+                message="Removed ${before-project.blocks.size} empty blocks and their placements. Undo restores them."
+            }
             "delete-request" -> {deletingId=id}
             "delete-cancel" -> deletingId=""
             "delete-confirm" -> {

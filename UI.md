@@ -470,3 +470,12 @@ Drag inside the selection to move it, with a live preview and movement clamped t
 Shift-drag starts a new selection; Escape clears it.
 Moving clears the source to transparency and replaces the destination, including transparent pixels.
 Each completed move is one autosaved, undoable edit.
+
+Enter in a single-line creation field activates Create.
+Keep Enter for newlines in multiline fields and for choosing reference suggestions.
+
+Deleting a tile also deletes every basic block containing it and every placement of those blocks.
+The confirmation shows how many block definitions and placements will be removed.
+Remove empty blocks cleans up basic blocks with no tiles, including their placements and references.
+Keep empty meta blocks and level roots.
+Both operations autosave as one undoable change.

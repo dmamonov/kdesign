@@ -78,7 +78,7 @@ fun libraryView(): String {
             "<button class='tile-card-open' ${attr("select",id)} title='${text(project.name(id))}' aria-label='Open ${text(project.name(id))}'><span class='tile-card-art'>${svg(id)}</span><span class='tile-card-name'>${text(project.name(id))}</span></button>" +
             button("Find usages","usages",id,cls="tile-card-usages quiet") + "</article>"
     } + "</div>"
-    return "<div class='library-grid'>" + items.joinToString("") { id ->
+    return (if(section=="Blocks" || section=="Objects") "<div class='cleanup-actions'>${button("Remove empty blocks","cleanup-empty-blocks",cls="quiet tiny")}</div>" else "") + "<div class='library-grid'>" + items.joinToString("") { id ->
         val concept = project.concepts.find {it.id==id}
         "<article class='panel library-card'>" + (if(concept==null) "<div class='library-art'>${svg(id)}</div>" else "<span class='tag'>${text(concept.type)}</span>") +
             "<h3>${rich(project.name(id))}</h3><p class='muted'>${if(concept!=null) rich(concept.description) else text(project.objectType(id))}</p><div class='concept-actions'>${button("Open", "select",id)}${button("Find usages","usages",id,cls="quiet")}</div></article>"
