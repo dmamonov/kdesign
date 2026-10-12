@@ -1,5 +1,5 @@
-data1/
-data1/
+data/
+data/
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
