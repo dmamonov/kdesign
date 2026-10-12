@@ -73,6 +73,11 @@ fun treeView(): String {
 fun libraryView(): String {
     val items = sectionItems()
     if(items.isEmpty()) return "<section class='panel empty'><h2>No ${text(section.lowercase())} yet</h2><p>Create an item to start designing.</p>${createButton()}</section>"
+    if(section=="Tiles") return "<div class='tile-gallery'>" + items.joinToString("") {id ->
+        "<article class='panel tile-card'>" +
+            "<button class='tile-card-open' ${attr("select",id)} title='${text(project.name(id))}' aria-label='Open ${text(project.name(id))}'><span class='tile-card-art'>${svg(id)}</span><span class='tile-card-name'>${text(project.name(id))}</span></button>" +
+            button("Find usages","usages",id,cls="tile-card-usages quiet") + "</article>"
+    } + "</div>"
     return "<div class='library-grid'>" + items.joinToString("") { id ->
         val concept = project.concepts.find {it.id==id}
         "<article class='panel library-card'>" + (if(concept==null) "<div class='library-art'>${svg(id)}</div>" else "<span class='tag'>${text(concept.type)}</span>") +

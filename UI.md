@@ -452,3 +452,10 @@ Double-click placement autosaves and is one undoable edit.
 
 Space fills the selected cell or area with the current block.
 Enter opens the block picker; right-click also opens it.
+
+## Tile gallery density
+
+Display the tile gallery in eight columns with four rows fitting the available viewport height.
+Use compact cards with a clickable preview, a single-line name, and a Find usages action.
+Show the complete name on hover when it is truncated.
+Scroll within the gallery when there are more than 32 tiles.
