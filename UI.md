@@ -459,3 +459,8 @@ Display the tile gallery in eight columns with four rows fitting the available v
 Use compact cards with a clickable preview, a single-line name, and a Find usages action.
 Show the complete name on hover when it is truncated.
 Scroll within the gallery when there are more than 32 tiles.
+
+Sprite conversion repairs enclosed transparent holes while retaining the exterior background.
+The tile editor also offers Fill holes for existing tiles, with autosave and Undo.
+Each enclosed region uses its most frequent bordering color.
+Transparent regions connected to the outside are preserved.

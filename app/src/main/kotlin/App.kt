@@ -52,7 +52,7 @@ fun HttpExchange.body(): String {
     require(bytes.size <= 4 * 1024 * 1024) { "Request exceeds 4 MiB" }
     return bytes.toString(Charsets.UTF_8)
 }
-fun generateTile(body: String): String {
+fun generateTile(body: String, store: FileStore): String {
     val key = System.getenv("OPENAI_API_KEY")?.takeIf { it.isNotBlank() } ?: error("Set OPENAI_API_KEY on the server to enable generation")
     val input = json.parseToJsonElement(body).jsonObject
     val description = input["description"]!!.jsonPrimitive.content
@@ -76,9 +76,17 @@ fun generateTile(body: String): String {
         ?: error("OpenAI returned no image. Try a different description.")
     val bytes = java.util.Base64.getDecoder().decode(encoded)
     val image = javax.imageio.ImageIO.read(bytes.inputStream()) ?: error("OpenAI returned an unreadable image")
+    val sourcePath="generations/${java.util.UUID.randomUUID()}.json"
+    val source=buildJsonObject {
+        put("description",description);put("size",size);put("terrain",terrain)
+        put("sourcePngBase64",encoded);put("converter","dominant-palette-v1")
+    }
+    store.write(sourcePath,source.toString())
     val raster = rasterToTile(image, size, terrain)
     val pixels = if(terrain && Regex("\\bwater\\b",RegexOption.IGNORE_CASE).containsMatchIn(description)) fitWaterMaterial(raster,size) else raster
+    store.write(sourcePath,JsonObject(source + ("pixels" to JsonArray(pixels.map {JsonPrimitive(it)}))).toString())
     return buildJsonObject {
+        put("sourcePath",sourcePath)
         put("name", description.trim().lineSequence().first().take(80))
         put("pixels", JsonArray(pixels.map {JsonPrimitive(it)}))
     }.toString()
@@ -102,7 +110,7 @@ fun main() {
                 path == "/api/files" && exchange.requestMethod == "GET" -> exchange.respond(200, store.read(query["path"] ?: error("Missing path")), "text/plain")
                 path == "/api/files" && exchange.requestMethod == "PUT" -> { store.write(query["path"] ?: error("Missing path"), exchange.body()); exchange.respond(200, "{\"saved\":true}") }
                 path == "/api/directory" && exchange.requestMethod == "GET" -> exchange.respond(200, store.list(query["path"] ?: "").toString())
-                path == "/api/generate" && exchange.requestMethod == "POST" -> exchange.respond(200, generateTile(exchange.body()))
+                path == "/api/generate" && exchange.requestMethod == "POST" -> exchange.respond(200, generateTile(exchange.body(),store))
                 path.startsWith("/api/") -> exchange.respond(405, "{\"error\":\"Unsupported endpoint or method\"}")
                 exchange.requestMethod == "GET" -> {
                     val file = web.resolve(if(path=="/") "index.html" else path.removePrefix("/")).normalize()

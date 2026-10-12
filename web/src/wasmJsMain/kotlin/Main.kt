@@ -69,7 +69,7 @@ fun render() {
 fun tileView(t: Tile): String = """
 <div class='tile-workspace'>
 <section class='panel padded tile-color-palette'><div class='eyebrow'>COLOR PALETTE</div><h3>Nintendo Entertainment System</h3><div class='palette-scroll'><div class='palette'>${palette.mapIndexed { i,c -> "<button title='Color $i · $c' aria-label='Color $i' class='${if(brush==i&&!eraser) "chosen" else ""}' ${attr("color",i.toString())} style='background:$c'></button>" }.joinToString("")}</div></div>${button("▧ Transparent","eraser",cls="tiny")}<p class='muted'>64 palette entries + transparency. · Selected: ${if(eraser) "transparent" else palette[brush]}</p></section>
-<div class='editor-layout'><section class='panel'><div class='panel-bar'><span>Tile editor <small>${t.size} × ${t.size}</small></span><div>${button("↶ Undo","undo",cls="tool")}${button("✎ Pencil","pencil",cls=if(!eraser) "tool active" else "tool")}${button("◇ Eraser","eraser",cls=if(eraser) "tool active" else "tool")}</div></div><div class='pixel-stage'><div class='pixel-grid' style='grid-template-columns:repeat(${t.size},1fr)'>${t.pixels.mapIndexed { i,c -> "<button id='px-$i' aria-label='Pixel ${i%t.size+1}, ${i/t.size+1}' ${attr("paint",i.toString())} style='background-color:${if(c<0) "transparent" else palette[c]}'></button>" }.joinToString("")}</div></div><div class='panel-caption'>Click or drag to draw · transparency is preserved · shared tiles update every usage</div></section>
+<div class='editor-layout'><section class='panel'><div class='panel-bar'><span>Tile editor <small>${t.size} × ${t.size}</small></span><div>${button("↶ Undo","undo",cls="tool")}${button("Fill holes","tile-fill-holes",cls="tool")}${button("✎ Pencil","pencil",cls=if(!eraser) "tool active" else "tool")}${button("◇ Eraser","eraser",cls=if(eraser) "tool active" else "tool")}</div></div><div class='pixel-stage'><div class='pixel-grid' style='grid-template-columns:repeat(${t.size},1fr)'>${t.pixels.mapIndexed { i,c -> "<button id='px-$i' aria-label='Pixel ${i%t.size+1}, ${i/t.size+1}' ${attr("paint",i.toString())} style='background-color:${if(c<0) "transparent" else palette[c]}'></button>" }.joinToString("")}</div></div><div class='panel-caption'>Click or drag to draw · transparency is preserved · shared tiles update every usage</div></section>
 <aside class='inspector'>${generationPanel()}<section class='panel padded tile-preview'><div class='eyebrow'>LIVE PREVIEW</div><div class='preview-tile'>${svg(t.id)}</div></section></aside></div>
 </div>
 """
@@ -228,6 +228,13 @@ fun action(kind: String, id: String, v: String) {
             "select", "open" -> select(id)
             "tab" -> {tableErrors.clear();tab=id}
             "snap" -> snap=v.toInt()
+            "tile-fill-holes" -> {
+                val t=currentTile() ?: return
+                val pixels=t.pixels.toMutableList()
+                repairEnclosedTransparency(pixels,t.size)
+                change {p->p.copy(tiles=p.tiles.map {if(it.id==t.id) it.copy(pixels=pixels) else it})}
+                message=if(pixels==t.pixels) "No enclosed transparent holes found" else "Enclosed holes filled. Undo restores the previous pixels."
+            }
             "pencil" -> eraser=false
             "eraser" -> eraser=true
             "color" -> {brush=id.toInt();eraser=false}

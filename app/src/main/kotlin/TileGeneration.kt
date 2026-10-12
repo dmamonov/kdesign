@@ -24,6 +24,8 @@ fun tileGenerationPrompt(description: String, size: Int, terrain: Boolean): Stri
     """ else """
     Show exactly one complete centered object, front or slight side view, with a clear silhouette.
     Use a readable dark outline, transparent surroundings, and no cast shadow or scenery.
+    Only the exterior background is transparent. All interior body features must be opaque,
+    including white fur, cheeks, muzzle, eyes, and highlights. Never cut holes in the face.
     Enlarge the object to use the canvas without clipping its silhouette.
     """}
 """.trimIndent()

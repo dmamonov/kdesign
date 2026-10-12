@@ -2,6 +2,7 @@ package org.example.app
 
 import java.awt.image.BufferedImage
 import kdesign.palette
+import kdesign.repairEnclosedTransparency
 import kotlin.test.*
 
 class TileRasterTest {
@@ -44,6 +45,33 @@ class TileRasterTest {
         assertTrue(result.all {it==18 || it==33})
         assertTrue(result.contains(33))
         assertEquals(List(256) {22},fitWaterMaterial(List(256) {22},16))
+    }
+    @Test fun downsamplingDoesNotInventColorsBetweenOutlineAndFill() {
+        val image=BufferedImage(64,64,BufferedImage.TYPE_INT_ARGB)
+        for(y in 0..63) for(x in 0..63) image.setRGB(x,y,color(if(x%4==0) 13 else 39))
+        assertEquals(List(16*16) {39},rasterToTile(image,16))
+    }
+    @Test fun invisiblePixelsDoNotVoteAndMajorityOutlinesRemainBlack() {
+        val image=BufferedImage(64,64,BufferedImage.TYPE_INT_ARGB)
+        for(y in 0..63) for(x in 0..63) image.setRGB(x,y,
+            if(x%4==0) 0x00ff00ff else color(if(x%4==1) 39 else 13))
+        assertEquals(List(16*16) {13},rasterToTile(image,16))
+    }
+    @Test fun repairsEnclosedFaceHolesButKeepsExteriorTransparent() {
+        val pixels=MutableList(256) {-1}
+        for(y in 3..12) for(x in 3..12) pixels[y*16+x]=39
+        for(y in 6..9) for(x in 6..9) pixels[y*16+x]=-1
+        repairEnclosedTransparency(pixels,16)
+        for(y in 0..15) for(x in 0..15) assertEquals(
+            if(x in 3..12 && y in 3..12) 39 else -1,pixels[y*16+x])
+    }
+    @Test fun opaqueWhiteFacialDetailsRemainOpaque() {
+        val image=BufferedImage(64,64,BufferedImage.TYPE_INT_ARGB)
+        for(y in 8..55) for(x in 8..55) image.setRGB(x,y,color(39))
+        for(y in 24..39) for(x in 24..39) image.setRGB(x,y,color(32))
+        val pixels=rasterToTile(image,16)
+        assertTrue(pixels.all {it>=0})
+        assertEquals(32,pixels[8*16+8])
     }
     @Test fun ignoresInvisibleRgbAndRejectsEmptyImages() {
         val image=BufferedImage(16,16,BufferedImage.TYPE_INT_ARGB)

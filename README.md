@@ -164,3 +164,8 @@ HTTP server). The original `utils` starter module remains available but is not u
 
 Implementation
 references: [Kotlin/Wasm JavaScript interoperability](https://kotlinlang.org/docs/wasm-js-interop.html), [OpenAI image generation](https://developers.openai.com/api/docs/guides/image-generation).
+
+Generated images are reduced using dominant NES palette colors rather than RGB averaging.
+This avoids creating intermediate colors where outlines meet bright fills.
+Original PNG data, generation descriptions, and converted pixels are retained in
+`data/generations/*.json` for comparison and future conversion changes.
