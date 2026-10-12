@@ -464,3 +464,9 @@ Sprite conversion repairs enclosed transparent holes while retaining the exterio
 The tile editor also offers Fill holes for existing tiles, with autosave and Undo.
 Each enclosed region uses its most frequent bordering color.
 Transparent regions connected to the outside are preserved.
+
+Use Select in the tile toolbar to drag a rectangular pixel selection.
+Drag inside the selection to move it, with a live preview and movement clamped to the tile bounds.
+Shift-drag starts a new selection; Escape clears it.
+Moving clears the source to transparency and replaces the destination, including transparent pixels.
+Each completed move is one autosaved, undoable edit.

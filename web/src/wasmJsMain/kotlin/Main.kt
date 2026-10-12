@@ -69,7 +69,7 @@ fun render() {
 fun tileView(t: Tile): String = """
 <div class='tile-workspace'>
 <section class='panel padded tile-color-palette'><div class='eyebrow'>COLOR PALETTE</div><h3>Nintendo Entertainment System</h3><div class='palette-scroll'><div class='palette'>${palette.mapIndexed { i,c -> "<button title='Color $i · $c' aria-label='Color $i' class='${if(brush==i&&!eraser) "chosen" else ""}' ${attr("color",i.toString())} style='background:$c'></button>" }.joinToString("")}</div></div>${button("▧ Transparent","eraser",cls="tiny")}<p class='muted'>64 palette entries + transparency. · Selected: ${if(eraser) "transparent" else palette[brush]}</p></section>
-<div class='editor-layout'><section class='panel'><div class='panel-bar'><span>Tile editor <small>${t.size} × ${t.size}</small></span><div>${button("↶ Undo","undo",cls="tool")}${button("Fill holes","tile-fill-holes",cls="tool")}${button("✎ Pencil","pencil",cls=if(!eraser) "tool active" else "tool")}${button("◇ Eraser","eraser",cls=if(eraser) "tool active" else "tool")}</div></div><div class='pixel-stage'><div class='pixel-grid' style='grid-template-columns:repeat(${t.size},1fr)'>${t.pixels.mapIndexed { i,c -> "<button id='px-$i' aria-label='Pixel ${i%t.size+1}, ${i/t.size+1}' ${attr("paint",i.toString())} style='background-color:${if(c<0) "transparent" else palette[c]}'></button>" }.joinToString("")}</div></div><div class='panel-caption'>Click or drag to draw · transparency is preserved · shared tiles update every usage</div></section>
+<div class='editor-layout'><section class='panel'><div class='panel-bar'><span>Tile editor <small>${t.size} × ${t.size}</small></span><div>${button("↶ Undo","undo",cls="tool")}${button("Fill holes","tile-fill-holes",cls="tool")}${button("▧ Select","tile-select-tool",cls=if(tileSelecting) "tool active" else "tool")}${button("✎ Pencil","pencil",cls=if(!tileSelecting&&!eraser) "tool active" else "tool")}${button("◇ Eraser","eraser",cls=if(!tileSelecting&&eraser) "tool active" else "tool")}</div></div><div class='pixel-stage'><div class='pixel-grid' tabindex='0' aria-label='Tile canvas' ${tileSelectionAttributes(t)} style='grid-template-columns:repeat(${t.size},1fr)'>${t.pixels.mapIndexed { i,c -> "<button id='px-$i' aria-label='Pixel ${i%t.size+1}, ${i/t.size+1}' ${attr("paint",i.toString())} style='background-color:${if(c<0) "transparent" else palette[c]}'></button>" }.joinToString("")}${tileSelectionOverlay(t)}</div></div><div class='panel-caption'>${if(tileSelecting) "Drag to select · drag inside to move · Shift-drag: new selection · Esc: deselect" else "Click or drag to draw · shared tiles update every usage"}</div></section>
 <aside class='inspector'>${generationPanel()}<section class='panel padded tile-preview'><div class='eyebrow'>LIVE PREVIEW</div><div class='preview-tile'>${svg(t.id)}</div></section></aside></div>
 </div>
 """
@@ -190,6 +190,7 @@ fun action(kind: String, id: String, v: String) {
         }
         if(kind in setOf("section", "category-root", "select", "open", "reference-open", "text-usage-open", "usage-open", "portal-go", "instance-open")) rememberLocation()
         if(kind=="url-navigation") {if(loaded) {restoreRoute();render()};return}
+        if(handleTileSelection(kind,id)) return
         if(handleMapAction(kind,id,v)) return
         when(kind) {
             "delete-request" -> {deletingId=id}
@@ -235,9 +236,9 @@ fun action(kind: String, id: String, v: String) {
                 change {p->p.copy(tiles=p.tiles.map {if(it.id==t.id) it.copy(pixels=pixels) else it})}
                 message=if(pixels==t.pixels) "No enclosed transparent holes found" else "Enclosed holes filled. Undo restores the previous pixels."
             }
-            "pencil" -> eraser=false
-            "eraser" -> eraser=true
-            "color" -> {brush=id.toInt();eraser=false}
+            "pencil" -> {eraser=false;tileSelecting=false;tileSelection=null}
+            "eraser" -> {eraser=true;tileSelecting=false;tileSelection=null}
+            "color" -> {brush=id.toInt();eraser=false;tileSelecting=false;tileSelection=null}
             "asset" -> {assetBrush=id;eraser=false;mapTool="select";closeRadial()}
             "stroke" -> {tileStrokeChanged=false;return}
             "paint" -> { val t=currentTile() ?: return; val index=id.toInt(); val c=if(eraser) -1 else brush; if(t.pixels[index]==c) return; if(!tileStrokeChanged) {checkpoint();tileStrokeChanged=true}; project=project.copy(tiles=project.tiles.map {if(it.id==t.id) it.copy(pixels=it.pixels.toMutableList().also {it[index]=c}) else it});changed();pixel("px-$index",if(c<0) "transparent" else palette[c]);return }

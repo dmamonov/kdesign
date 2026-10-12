@@ -36,6 +36,7 @@ window.designer = {
   },
   bind(action) {
     window.designer.bindMap(action);
+    window.designer.bindTileSelection(action);
     window.addEventListener('popstate',()=>action('url-navigation','',''));
     window.addEventListener('hashchange',()=>action('url-navigation','',''));
     let painting = false;
@@ -110,7 +111,7 @@ window.designer = {
     document.addEventListener('change', e => { const el=e.target; if(el.dataset.change) action(el.dataset.change,el.dataset.id??'',el.value);else if(el.id && el.tagName==='SELECT') action('form-edit',el.id,el.value); });
     document.addEventListener('pointerdown', e => {
       const el=e.target.closest('[data-action="paint"]');
-      if(el && e.button===0) { e.preventDefault(); el.focus({preventScroll:true}); painting=true; action('stroke','',''); action('paint',el.dataset.id,''); }
+      if(el && e.button===0 && el.closest('.pixel-grid')?.dataset.tileSelect!=='true') { e.preventDefault(); el.focus({preventScroll:true}); painting=true; action('stroke','',''); action('paint',el.dataset.id,''); }
     });
     document.addEventListener('pointerover', e => { const el=e.target.closest('[data-action="paint"]'); if(painting && el) action('paint',el.dataset.id,''); });
     const endStroke=()=>{if(painting){painting=false;action('stroke-end','','');}};

@@ -108,3 +108,8 @@ button.danger{color:#ffb6a6;border-color:#865346}button.danger:hover{background:
 .tile-card-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:15px}
 .tile-card-usages{font-size:9px;padding:2px 0;border:0;text-align:left;line-height:12px;min-height:0}
 @media(max-height:550px){.tile-gallery{--gallery-height:320px}}
+
+.pixel-grid{position:relative}
+.tile-selection{position:absolute;pointer-events:none;border:2px dashed #fff;background:#bde89b15;box-shadow:0 0 0 1px #111;z-index:2}
+.pixel-grid[data-tile-select=true],.pixel-grid[data-tile-select=true] button{cursor:crosshair}
+.pixel-grid:focus-visible{outline:1px solid #bde89b;outline-offset:3px}
