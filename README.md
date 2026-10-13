@@ -169,3 +169,4 @@ Generated images are reduced using dominant NES palette colors rather than RGB a
 This avoids creating intermediate colors where outlines meet bright fills.
 Original PNG data, generation descriptions, and converted pixels are retained in
 `data/generations/*.json` for comparison and future conversion changes.
+Each original PNG is also saved beside its JSON with the same filename stem.

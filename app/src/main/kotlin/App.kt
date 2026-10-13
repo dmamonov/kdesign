@@ -26,14 +26,17 @@ class FileStore(directory: Path) {
         return path
     }
     fun read(name: String) = Files.readString(resolve(name))
-    @Synchronized fun write(name: String, content: String) {
+    fun write(name: String, content: String) = writeBytes(name, content.toByteArray(Charsets.UTF_8))
+    @Synchronized fun writeBytes(name: String, content: ByteArray) {
         val path = resolve(name)
         require(path != root) { "A file path is required" }
-        if (path == root.resolve("project.json")) json.decodeFromString<Project>(content).validate()
+        if (path == root.resolve("project.json")) {
+            json.decodeFromString<Project>(content.toString(Charsets.UTF_8)).validate()
+        }
         Files.createDirectories(path.parent)
         val temp = Files.createTempFile(path.parent, ".write-", ".tmp")
         try {
-            Files.writeString(temp, content)
+            Files.write(temp, content)
             try { Files.move(temp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING) }
             catch (_: AtomicMoveNotSupportedException) { Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING) }
         } finally { Files.deleteIfExists(temp) }
@@ -77,16 +80,20 @@ fun generateTile(body: String, store: FileStore): String {
     val bytes = java.util.Base64.getDecoder().decode(encoded)
     val image = javax.imageio.ImageIO.read(bytes.inputStream()) ?: error("OpenAI returned an unreadable image")
     val sourcePath="generations/${java.util.UUID.randomUUID()}.json"
+    val sourcePngPath=sourcePath.removeSuffix(".json")+".png"
     val source=buildJsonObject {
         put("description",description);put("size",size);put("terrain",terrain)
         put("sourcePngBase64",encoded);put("converter","dominant-palette-v1")
+        put("sourcePngPath",sourcePngPath)
     }
+    store.writeBytes(sourcePngPath,bytes)
     store.write(sourcePath,source.toString())
     val raster = rasterToTile(image, size, terrain)
     val pixels = if(terrain && Regex("\\bwater\\b",RegexOption.IGNORE_CASE).containsMatchIn(description)) fitWaterMaterial(raster,size) else raster
     store.write(sourcePath,JsonObject(source + ("pixels" to JsonArray(pixels.map {JsonPrimitive(it)}))).toString())
     return buildJsonObject {
         put("sourcePath",sourcePath)
+        put("sourcePngPath",sourcePngPath)
         put("name", description.trim().lineSequence().first().take(80))
         put("pixels", JsonArray(pixels.map {JsonPrimitive(it)}))
     }.toString()
