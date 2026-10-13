@@ -119,3 +119,8 @@ button.danger{color:#ffb6a6;border-color:#865346}button.danger:hover{background:
 .type-hierarchy .tree-toggle{width:23px;flex:none;padding:5px 0}
 .type-hierarchy .tree-label{display:flex;align-items:center;gap:7px;min-width:0;text-align:left}
 .type-hierarchy .type-kind{margin-left:auto;padding:0 12px;white-space:nowrap}
+.palette-groups{display:flex;gap:5px;overflow-x:auto;padding:8px;scrollbar-width:thin}
+.palette-groups button{white-space:nowrap;flex:none}
+.palette-groups .active{background:#34492d;color:var(--accent)}
+.palette-stepper{display:flex;flex-wrap:wrap;gap:4px;padding:0 8px 6px}
+.palette-shortcuts{display:block;padding:0 8px 8px}

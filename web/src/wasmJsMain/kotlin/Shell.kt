@@ -6,6 +6,17 @@ val sections = listOf("Levels", "Tiles", "Meta blocks", "Types", "Map objects")
 val sectionMemory = mutableMapOf<String, Pair<String, String>>()
 val expandedNodes = mutableSetOf<String>()
 var treeQuery = ""
+var lastActiveLevel = ""
+@JsFun("() => { try { return localStorage.getItem('kdesign.lastActiveLevel') || ''; } catch (_) { return ''; } }")
+external fun readLastActiveLevel(): String
+@JsFun("(id) => { try { localStorage.setItem('kdesign.lastActiveLevel', id); } catch (_) {} }")
+external fun storeLastActiveLevel(id: String)
+fun rememberActiveLevel() {
+    if(section=="Levels" && project.levels.any {it.id==selected} && lastActiveLevel!=selected) {
+        lastActiveLevel=selected
+        storeLastActiveLevel(selected)
+    }
+}
 data class Location(val section: String, val selected: String, val tab: String,
                     val usage: String, val path: List<String>, val query: String)
 val locations = mutableListOf<Location>()
@@ -14,18 +25,25 @@ fun rememberLocation() {
     if (locations.size > 100) locations.removeAt(0)
 }
 fun switchSection(name: String) {
+    rememberActiveLevel()
     sectionMemory[section] = selected to tab
     section = name
     val remembered = sectionMemory[name]
     selected = remembered?.first ?: ""
     tab = remembered?.second ?: if(name == "Levels") "World map" else "Library"
+    if(name=="Levels") {
+        val previous=lastActiveLevel.ifBlank {readLastActiveLevel()}
+        selected=project.levels.find {it.id==previous}?.id ?: project.levels.firstOrNull()?.id ?: ""
+        tab=if(selected.isNotEmpty()) "Canvas" else "World map"
+        highlightPath=emptyList()
+    }
     treeQuery = ""
 }
 fun sectionItems(): List<String> = when(section) {
     "Types" -> project.types.map {it.id}
     "Levels" -> project.levels.map { it.id }
     "Tiles" -> project.tiles.map { it.id }
-    "Meta blocks" -> project.blocks.filter { it.kind == "meta" }.map { it.id }
+    "Meta blocks" -> project.blocks.filter { it.kind == "meta" && !it.anonymous }.map { it.id }
     "Objects" -> project.tiles.map { it.id } + project.blocks.map { it.id }
     else -> project.concepts.filter { it.category == section }.map { it.id }
 }
@@ -96,6 +114,7 @@ fun conceptWorkspace(): String {
 }
 fun renderShell() {
     if(selected.isNotEmpty() && selected !in project.objectIds()) selected=""
+    rememberActiveLevel()
     val level=currentLevel(); val block=currentBlock(); val tile=currentTile()
     val concept=project.concepts.any {it.id==selected}
     val type=project.types.any {it.id==selected}

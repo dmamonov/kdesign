@@ -527,3 +527,31 @@ Parentless types appear under Empty without adding stored inheritance relationsh
 A type with multiple parents appears beneath each parent, sharing the same definition.
 Search retains ancestor paths and expands matching branches.
 Use distinct symbols for simple properties and composite types.
+
+## Placement configuration and grouped palette
+
+Normal placement references the selected tile or meta block directly.
+Right-click an occupied map position and choose Configure to create an anonymous meta-block wrapper.
+The wrapper has its own type inheriting from the original block's type.
+It keeps the original graphic at its origin and preserves the placement position and effective values.
+Configuration opens the wrapper's Properties view and affects only that placement.
+Repeated configuration reuses an existing private wrapper.
+Anonymous wrappers do not appear in the reusable Meta Blocks library or placement palette.
+Creation and configuration autosave and support Undo.
+
+The palette has two levels: parent-type groups and actual tiles.
+A tile with multiple parent types appears in each corresponding group.
+Parentless tile types appear in Empty.
+Reusable meta blocks have a separate group.
+Group buttons and previous/next controls provide quick switching.
+Alt+Left/Right switches groups; Alt+Up/Down switches elements within the active group.
+The around-cursor picker uses the active group and includes group switching controls.
+
+Clicking the Levels category always reopens the last active level's map.
+Remember that level across section changes, overview visits, and browser refreshes.
+If it was deleted, open the first available level; if none remain, show the world overview.
+The Levels sidebar heading still opens the overview table.
+
+Anonymous wrapper types are hidden from the Types sidebar and hierarchy overview, including search.
+They remain available through the configured placement's Edit type action.
+Public descendants appear under the nearest visible ancestor without changing their stored parents.

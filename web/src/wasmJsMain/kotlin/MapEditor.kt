@@ -28,14 +28,14 @@ fun openRadial(position: String="") {
     val coords=position.split(',').mapNotNull {it.toIntOrNull()}
     if(coords.size==2) {radialX=coords[0];radialY=coords[1];radialPage=0}
     val b=currentBlock() ?: return
-    val assets=project.compositionAssets(b.id)
+    val assets=activePaletteGroup(b)?.assets.orEmpty()
     val pages=maxOf(1,(assets.size+7)/8);radialPage=radialPage.coerceIn(0,pages-1)
     val page=assets.drop(radialPage*8).take(8)
     val choices=page.mapIndexed { i,id ->
         val angle=-PI/2 + i*2*PI/page.size
         "<button class='radial-choice ${if(assetBrush==id) "selected" else ""}' style='left:${180+sin(angle+PI/2)*123}px;top:${180-cos(angle+PI/2)*123}px' ${attr("asset",id)} aria-label='Pick ${text(project.name(id))}'><span class='radial-art'>${svg(id)}</span><span>${text(project.name(id))}</span><kbd>${hotkey(id)}</kbd></button>"
     }.joinToString("")
-    showRadial("<div class='radial-center'><b>Choose a block</b><small>${radialPage+1} / $pages</small><div>${button("‹","radial-page","-1",cls="tiny")}${button("×","radial-close",cls="tiny")}${button("›","radial-page","1",cls="tiny")}</div></div>$choices",radialX,radialY)
+    showRadial("<div class='radial-center'><b>${text(activePaletteGroup(b)?.name ?: "Blocks")}</b><div>${button("‹ Group","palette-radial-group","-1",cls="tiny")}${button("Group ›","palette-radial-group","1",cls="tiny")}</div><small>${radialPage+1} / $pages</small><div>${button("‹","radial-page","-1",cls="tiny")}${button("×","radial-close",cls="tiny")}${button("›","radial-page","1",cls="tiny")}</div></div>$choices",radialX,radialY)
 }
 fun assignHotkey(asset: String, key: String, confirmed: Boolean = false) {
     val previous = project.hotkeys[key]
@@ -48,13 +48,49 @@ fun assignHotkey(asset: String, key: String, confirmed: Boolean = false) {
 }
 fun handleMapAction(kind: String,id: String,v: String): Boolean {
     when(kind) {
+        "map-context" -> {
+            val b=currentBlock() ?: return true
+            val (x,y)=id.split(',').map {it.toInt()}
+            val hit=b.children.lastOrNull { c -> val (w,h)=project.size(c.assetId)
+                x>=c.x && y>=c.y && x<c.x+w && y<c.y+h }
+            val coords=v.split(',').map {it.toInt()}
+            if(hit==null) openRadial(v) else showRadial(
+                "<div class='radial-center'><b>${text(project.name(hit.assetId))}</b>${button("Configure","map-configure",hit.id)}${button("Choose block","radial-open",v)}${button("Cancel","radial-close")}</div>",coords[0],coords[1])
+            return true
+        }
+        "map-configure" -> {
+            val parent=currentBlock() ?: return true
+            rememberLocation()
+            change {it.configurePlacement(parent.id,id,::uuid)}
+            val wrapper=project.blocks.first {it.id==parent.id}.children.first {it.id==id}.assetId
+            closeRadial();select(wrapper);tab="Properties"
+        }
+        "palette-group" -> {
+            paletteGroup=id;radialPage=0
+            assetBrush=activePaletteGroup(currentBlock()!!)?.assets?.firstOrNull() ?: ""
+        }
+        "palette-step-group", "palette-radial-group" -> {
+            val b=currentBlock() ?: return true
+            val groups=project.paletteGroups(b.id)
+            if(groups.isEmpty()) return true
+            val index=groups.indexOfFirst {it.id==activePaletteGroup(b)?.id}
+            val group=groups[(index+id.toInt()+groups.size)%groups.size]
+            paletteGroup=group.id;assetBrush=group.assets.first();radialPage=0
+            if(kind=="palette-radial-group") {openRadial();return true}
+        }
+        "palette-step-asset" -> {
+            val assets=activePaletteGroup(currentBlock()!!)?.assets.orEmpty()
+            if(assets.isEmpty()) return true
+            assetBrush=assets[(assets.indexOf(assetBrush).coerceAtLeast(0)+id.toInt()+assets.size)%assets.size]
+        }
+
         "hotkey-confirm" -> {hotkeyConflict?.let {assignHotkey(it.first,it.second,true)}}
         "hotkey-cancel" -> hotkeyConflict=null
         "map-tool" -> mapTool=id
         "bind-hotkey" -> assignHotkey(id,v)
         "map-key" -> {
             if(v=="assign") {require(assetBrush.isNotBlank()) {"Choose an asset first"};assignHotkey(assetBrush,id)}
-            else { val target=project.hotkeys[id] ?: return true;require(target in project.compositionAssets(currentBlock()!!.id)) {"Hotkey $id is not available for this canvas"};message="";assetBrush=target;val area=mapSelection ?: error("Select a cell or area first");change {it.fillArea(currentBlock()!!.id,target,area,snap,true,::uuid)} }
+            else { val target=project.hotkeys[id] ?: return true;require(target in project.compositionAssets(currentBlock()!!.id)) {"Hotkey $id is not available for this canvas"};message="";assetBrush=target;paletteGroup="";val area=mapSelection ?: error("Select a cell or area first");change {it.fillArea(currentBlock()!!.id,target,area,snap,true,::uuid)} }
         }
         "map-apply" -> {
             val b=currentBlock() ?: return true
@@ -95,4 +131,20 @@ fun handleMapAction(kind: String,id: String,v: String): Boolean {
         else -> return false
     }
     render();updateSaveStatus();focusMap();return true
+}
+
+var paletteGroup = ""
+fun activePaletteGroup(b: Block): AssetGroup? {
+    val groups=project.paletteGroups(b.id)
+    val group=groups.find {it.id==paletteGroup} ?: groups.find {assetBrush in it.assets} ?: groups.firstOrNull()
+    paletteGroup=group?.id ?: ""
+    return group
+}
+fun groupedPalette(b: Block): String {
+    val group=activePaletteGroup(b)
+    return "<div class='palette-groups' aria-label='Block groups'>" + project.paletteGroups(b.id).joinToString("") {
+        button("${text(it.name)} (${it.assets.size})","palette-group",it.id,cls=if(it.id==group?.id) "tiny active" else "tiny")
+    } + "</div><div class='palette-stepper'>${button("‹ Group","palette-step-group","-1",cls="tiny")}${button("Group ›","palette-step-group","1",cls="tiny")}${button("↑ Tile","palette-step-asset","-1",cls="tiny")}${button("Tile ↓","palette-step-asset","1",cls="tiny")}</div>" +
+        "<small class='palette-shortcuts'>Alt + ←/→: group · Alt + ↑/↓: tile</small>" +
+        "<div class='asset-list'>${group?.assets?.joinToString("") {mapAssetCard(it)} ?: "No available blocks"}</div>"
 }
