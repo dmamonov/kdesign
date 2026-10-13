@@ -114,7 +114,7 @@ fun select(id: String) {
     selected=id; highlightPath=emptyList()
     var ancestor=project.levels.find {it.id==id}?.parentId
     while(ancestor!=null) {expandedNodes.add(ancestor);ancestor=project.levels.find {it.id==ancestor}?.parentId}
-    section=when { project.concepts.any {it.id==id}->project.concepts.first {it.id==id}.category; section=="Objects" && project.blocks.any {it.id==id}->"Objects"; project.tiles.any {it.id==id}->"Tiles"; project.levels.any {it.id==id}->"Levels"; project.blocks.any {it.id==id&&it.kind=="block"}->"Blocks"; else->"Meta blocks" }
+    section=when { project.concepts.any {it.id==id}->project.concepts.first {it.id==id}.category; section=="Objects" && project.blocks.any {it.id==id}->"Objects"; project.tiles.any {it.id==id}->"Tiles"; project.levels.any {it.id==id}->"Levels"; else->"Meta blocks" }
     if(section!=previousSection) treeQuery=""
     tab=if(section=="Levels") "Canvas" else if(section in categories) "Design" else "Editor"
 }
@@ -136,12 +136,12 @@ fun create() {
             require(!generating) {"Wait for the current generation to finish before creating another tile"}
             val size=value("new-size").toInt()
             val tile=Tile(id,name,size)
-            change {it.addTileWithBlock(tile,uuid(),uuid())};select(id);modal=""
+            change {it.addTile(tile)};select(id);modal=""
             generationPrompt=name;generationSize=size.toString()
-            if(generationAvailable) generate(tile,name,"auto") else message="Tile and block created. Automatic generation needs OPENAI_API_KEY on the server."
+            if(generationAvailable) generate(tile,name,"auto") else message="Tile created. Automatic generation needs OPENAI_API_KEY on the server."
         }
-        "Blocks", "Meta blocks", "Levels" -> {
-            val b=Block(id,name,if(modal=="Blocks") "block" else "meta",value("new-width").toInt(),value("new-height").toInt())
+        "Meta blocks", "Levels" -> {
+            val b=Block(id,name,"meta",value("new-width").toInt(),value("new-height").toInt())
             val l=if(modal=="Levels") Level(uuid(),name,id,value("new-parent").ifBlank {null}) else null
             change {it.copy(blocks=it.blocks+b, levels=it.levels+listOfNotNull(l))}; select(l?.id ?: id)
         }
@@ -154,7 +154,7 @@ fun generate(existing: Tile? = currentTile(), description: String? = null, mode:
     if(generating) return
     require(generationAvailable) { "Generation needs OPENAI_API_KEY. Set it in the server environment and restart." }
     val prompt=project.displayText(description ?: value("prompt")); require(prompt.isNotBlank()) {"Describe the tile you want to generate"}
-    val targetBlock=currentBlock()?.takeIf {it.kind=="block"}; val size=existing?.size ?: value("generation-size").toIntOrNull() ?: 16
+    val targetBlock=currentBlock(); val size=existing?.size ?: value("generation-size").toIntOrNull() ?: 16
     generating=true; message="Generating editable pixels…"; render()
     request("POST","/api/generate",buildJsonObject {put("description",prompt);put("size",size);put("mode",mode)}.toString()) {ok,text ->
         generating=false
@@ -163,7 +163,7 @@ fun generate(existing: Tile? = currentTile(), description: String? = null, mode:
             val pixels=obj["pixels"]!!.jsonArray.map {it.jsonPrimitive.int}
             if(existing!=null) {
                 change {it.applyGeneratedPixels(existing,pixels)}
-                message="Tile generated. Its block and all usages have updated automatically."
+                message="Tile generated. All its usages have updated automatically."
                 render();return@request
             }
             val t=Tile(uuid(),obj["name"]!!.jsonPrimitive.content,size,pixels)
@@ -173,7 +173,7 @@ fun generate(existing: Tile? = currentTile(), description: String? = null, mode:
                     val spot=(0..b.height-size step size).flatMap {y->(0..b.width-size step size).map {x->x to y}}.firstOrNull {(x,y)-> b.children.none {c-> val (w,h)=p.size(c.assetId); x<c.x+w && x+size>c.x && y<c.y+h && y+size>c.y}}
                     if(spot==null) b else {placed=true;b.copy(children=b.children+Placement(uuid(),t.id,spot.first,spot.second))}
                 } }
-                p.copy(blocks=blocks).addTileWithBlock(t,uuid(),uuid())
+                p.copy(blocks=blocks).addTile(t)
             }
             if(targetBlock==null) select(t.id)
             message=if(targetBlock!=null&&!placed) "Tile created in Tiles. The block has no free cell." else "Generated tile added. Saving automatically."

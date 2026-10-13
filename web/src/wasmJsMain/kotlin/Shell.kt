@@ -2,7 +2,7 @@ package kdesign.web
 
 import kdesign.*
 
-val sections = listOf("Levels", "Tiles", "Blocks", "Meta blocks", "Objects") + categories.keys
+val sections = listOf("Levels", "Tiles", "Meta blocks", "Objects") + categories.keys
 val sectionMemory = mutableMapOf<String, Pair<String, String>>()
 val expandedNodes = mutableSetOf<String>()
 var treeQuery = ""
@@ -24,13 +24,12 @@ fun switchSection(name: String) {
 fun sectionItems(): List<String> = when(section) {
     "Levels" -> project.levels.map { it.id }
     "Tiles" -> project.tiles.map { it.id }
-    "Blocks" -> project.blocks.filter { it.kind == "block" }.map { it.id }
     "Meta blocks" -> project.blocks.filter { it.kind == "meta" }.map { it.id }
-    "Objects" -> project.blocks.map { it.id }
+    "Objects" -> project.tiles.map { it.id } + project.blocks.map { it.id }
     else -> project.concepts.filter { it.category == section }.map { it.id }
 }
 fun createButton(compact: Boolean = false): String {
-    val type = when { section in categories -> "Concepts"; section == "Objects" -> "Blocks"; else -> section }
+    val type = when { section in categories -> "Concepts"; section == "Objects" -> "Meta blocks"; else -> section }
     val label = when(type) { "Levels" -> "level"; "Tiles" -> "tile"; "Concepts" -> "concept"; "Meta blocks" -> "meta block"; else -> "block" }
     return button("+ New $label", "new", if(section in categories) section else "", type, if(compact) "primary tiny tree-new" else "primary")
 }
@@ -78,7 +77,7 @@ fun libraryView(): String {
             "<button class='tile-card-open' ${attr("select",id)} title='${text(project.name(id))}' aria-label='Open ${text(project.name(id))}'><span class='tile-card-art'>${svg(id)}</span><span class='tile-card-name'>${text(project.name(id))}</span></button>" +
             button("Find usages","usages",id,cls="tile-card-usages quiet") + "</article>"
     } + "</div>"
-    return (if(section=="Blocks" || section=="Objects") "<div class='cleanup-actions'>${button("Remove empty blocks","cleanup-empty-blocks",cls="quiet tiny")}</div>" else "") + "<div class='library-grid'>" + items.joinToString("") { id ->
+    return "<div class='library-grid'>" + items.joinToString("") { id ->
         val concept = project.concepts.find {it.id==id}
         "<article class='panel library-card'>" + (if(concept==null) "<div class='library-art'>${svg(id)}</div>" else "<span class='tag'>${text(concept.type)}</span>") +
             "<h3>${rich(project.name(id))}</h3><p class='muted'>${if(concept!=null) rich(concept.description) else text(project.objectType(id))}</p><div class='concept-actions'>${button("Open", "select",id)}${button("Find usages","usages",id,cls="quiet")}</div></article>"

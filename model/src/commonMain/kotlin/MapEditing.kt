@@ -9,7 +9,7 @@ fun Project.compositionAssets(parentId: String): List<String> {
     val parent=blocks.first {it.id==parentId}
     fun reaches(id: String, seen: Set<String> = emptySet()): Boolean = id==parentId || (id !in seen && blocks.find {it.id==id}?.children?.any {reaches(it.assetId,seen+id)}==true)
     return if(parent.kind=="block") tiles.filter {it.size<=parent.width && it.size<=parent.height}.map {it.id}
-    else blocks.filter {it.width<=parent.width && it.height<=parent.height && !reaches(it.id)}.map {it.id}
+    else tiles.filter {it.size<=parent.width && it.size<=parent.height}.map {it.id} + blocks.filter {it.width<=parent.width && it.height<=parent.height && !reaches(it.id)}.map {it.id}
 }
 /** A fill is one validated edit. Partial boundary overlaps are preserved, never cropped. */
 fun Project.fillArea(parentId: String, assetId: String, area: MapArea, snap: Int, replace: Boolean, newId: () -> String): Project {

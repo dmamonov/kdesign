@@ -29,11 +29,10 @@ Saving should not require a separate manual action after each edit.
 
 ## Graphics hierarchy
 
-The graphics model has four main layers:
+The graphics model has three main layers:
 
-- **Tile** - Smallest graphic primitive
-- **Block** - Sparse combination of tiles, with semantics and properties
-- **Meta block** - Combination of blocks or other meta blocks
+- **Tile** - Smallest graphic primitive and directly placeable 1×1 block
+- **Meta block** - Sparse combination of tiles or other meta blocks
 - **Level** - Independent space containing a top-level meta block
 
 ### Tiles
@@ -45,25 +44,17 @@ Allow transparent pixels.
 
 Provide a basic editor for drawing tiles.
 Also allow a tile to be generated from a text description through the OpenAI API.
-Generated tiles should be available for use in blocks.
-
-### Blocks
-
-A block combines tiles into a larger graphic.
-Some tile positions may be omitted, allowing sparse compositions.
-
-Blocks can carry metadata describing their semantics and properties.
-This metadata plays the role of types in the design model.
-For example, a mushroom block should represent a recognizable design object, not only its pixels.
-
-Provide a basic description-based tile generation UI within the block workflow.
-The requested generation capability is tile generation for use in a block.
-Generation of an entire block is not yet specified.
+Each tile is automatically a 1×1 block, using its native 8×8 or 16×16 pixel footprint.
+It has one identity for drawing, placement, hotkeys, and usage navigation.
+There is no separate basic block definition or Blocks section.
 
 ### Meta blocks
 
-A meta block combines blocks rather than primitive tiles.
-Meta blocks may also contain other meta blocks, allowing hierarchical composition.
+A meta block combines tiles and other meta blocks into a hierarchical, sparse composition.
+Some positions may be omitted.
+Meta blocks carry semantic properties, linked concepts, and connections.
+Tile edits update all direct and nested usages.
+Deleting a tile removes its placements while retaining containing meta blocks.
 
 Meta blocks may hold identity references to other meta blocks.
 For example, a door into a cave can point to a cave entrance in a sublevel.
@@ -233,7 +224,7 @@ The starting design brings together:
 - A Kotlin application running in the browser through WebAssembly.
 - Filesystem storage under `data`, accessed through a simple server API.
 - Tile drawing and description-based generation.
-- Blocks, hierarchical meta blocks, levels, and sublevels.
+- Directly placeable tiles, hierarchical meta blocks, levels, and sublevels.
 - Identity references and navigation to usages across levels.
 - References to objects in all authored text fields.
 - The requested conceptual categories and level design information.

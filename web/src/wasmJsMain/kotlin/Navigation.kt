@@ -13,7 +13,7 @@ var replaceRoute = true
 fun restoreRoute() {
     val route=runCatching {json.parseToJsonElement(readRoute()).jsonObject}.getOrNull() ?: return
     fun value(key: String)=route[key]?.jsonPrimitive?.content ?: ""
-    section=value("section").takeIf {it in sections} ?: "Levels"
+    section=value("section").let {if(it=="Blocks") "Tiles" else it}.takeIf {it in sections} ?: "Levels"
     selected="";usageId="";highlightPath=emptyList();treeQuery=""
     modal="";deletingId="";hotkeyConflict=null;mapSelection=null
     val id=value("object")

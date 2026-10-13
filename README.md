@@ -113,8 +113,12 @@ definitions, levels, and concepts; portal instance paths remain the mechanism fo
 `model/src/commonMain/kotlin/Model.kt` is shared by browser and server:
 
 - A `Tile` owns palette indices, with `-1` for transparency.
-- A `Block` with `kind="block"` contains tile placements. A block with `kind="meta"` contains block/meta-block
-  placements. Empty regions are omitted, not materialized as transparent child entities.
+- Tiles are directly placeable 1×1 blocks with their native pixel dimensions.
+  Meta blocks combine tiles and other meta blocks.
+  Version 2 retains the serialized `blocks` collection for meta blocks only.
+  Legacy single-tile wrappers migrate to direct references.
+  Authored compositions and blocks with semantic metadata become meta blocks.
+  Migration saves a backup in `data/backups/`.
 - Every definition has a stable ID. Each `Placement` has a separate stable ID in its parent's coordinate space and
   references its asset by ID. Editing an asset updates all its occurrences.
 - A `Level` references a top-level meta block and optionally a parent level. Its notes contain all eight requested

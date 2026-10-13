@@ -30,13 +30,14 @@ class FileStore(directory: Path) {
     @Synchronized fun writeBytes(name: String, content: ByteArray) {
         val path = resolve(name)
         require(path != root) { "A file path is required" }
-        if (path == root.resolve("project.json")) {
-            json.decodeFromString<Project>(content.toString(Charsets.UTF_8)).validate()
-        }
+        val saved = if (path == root.resolve("project.json")) {
+            val project = json.decodeFromString<Project>(content.toString(Charsets.UTF_8))
+            json.encodeToString(project.simplifyBlocks()).toByteArray(Charsets.UTF_8)
+        } else content
         Files.createDirectories(path.parent)
         val temp = Files.createTempFile(path.parent, ".write-", ".tmp")
         try {
-            Files.write(temp, content)
+            Files.write(temp, saved)
             try { Files.move(temp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING) }
             catch (_: AtomicMoveNotSupportedException) { Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING) }
         } finally { Files.deleteIfExists(temp) }
@@ -101,6 +102,13 @@ fun generateTile(body: String, store: FileStore): String {
 fun main() {
     val store = FileStore(Path.of(System.getenv("DATA_DIR") ?: "data"))
     if (!Files.exists(store.resolve("project.json"))) store.write("project.json", json.encodeToString(sampleProject()))
+    val original = store.read("project.json")
+    val project = json.decodeFromString<Project>(original)
+    if (project.version == 1) {
+        val migrated = project.simplifyBlocks()
+        store.write("backups/project-before-tile-blocks-${java.util.UUID.randomUUID()}.json", original)
+        store.write("project.json", json.encodeToString(migrated))
+    }
     val web = Path.of(System.getenv("WEB_DIR") ?: "web/build/dist/wasmJs/developmentExecutable").toAbsolutePath().normalize()
     val port = System.getenv("PORT")?.toInt() ?: 8080
     val server = HttpServer.create(InetSocketAddress("127.0.0.1", port), 0)

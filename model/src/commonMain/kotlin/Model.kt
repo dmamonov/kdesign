@@ -34,17 +34,17 @@ val fieldLabels = listOf("Description", "Player mechanics", "Player goals", "Des
     fun name(id: String): String = tiles.find { it.id == id }?.name ?: blocks.find { it.id == id }?.name ?: levels.find { it.id == id }?.title ?: concepts.find { it.id == id }?.name ?: id
     fun size(id: String): Pair<Int, Int> = tiles.find { it.id == id }?.let { it.size to it.size } ?: blocks.find { it.id == id }?.let { it.width to it.height } ?: (16 to 16)
     fun validate() {
-        require(version == 1) { "Unsupported project version" }
+        require(version in 1..2) { "Unsupported project version" }
         val ids = tiles.map { it.id } + blocks.map { it.id } + levels.map { it.id } + concepts.map { it.id }
         require(ids.all { it.isNotBlank() } && ids.distinct().size == ids.size) { "Entity IDs must be unique and nonempty" }
         require(hotkeys.keys.all {it.length==1 && (it[0] in '0'..'9' || it[0] in 'a'..'z')} && hotkeys.values.all {id -> tiles.any {it.id==id} || blocks.any {it.id==id}} && hotkeys.values.distinct().size==hotkeys.size) { "Invalid asset hotkeys" }
         textReferences().forEach { require(it.targetId in ids) { "Missing text reference [[${it.targetId}]] in ${it.field}" } }
         tiles.forEach { require(it.size in listOf(8, 16) && it.pixels.size == it.size * it.size && it.pixels.all { p -> p in -1..63 }) { "Invalid tile ${it.name}" } }
         blocks.forEach { b ->
-            require(b.kind in listOf("block", "meta") && b.width in 8..4096 && b.height in 8..4096) { "Invalid block dimensions or kind" }
+            require((if (version == 2) b.kind == "meta" else b.kind in listOf("block", "meta")) && b.width in 8..4096 && b.height in 8..4096) { "Invalid block dimensions or kind" }
             require(b.children.map { it.id }.distinct().size == b.children.size && b.children.all { it.id.isNotBlank() }) { "Placement IDs must be unique within a block" }
             b.children.forEach { c ->
-                require(if (b.kind == "block") tiles.any { it.id == c.assetId } else blocks.any { it.id == c.assetId }) { "Invalid child type or missing asset in ${b.name}" }
+                require(if (b.kind == "block") tiles.any { it.id == c.assetId } else tiles.any { it.id == c.assetId } || blocks.any { it.id == c.assetId }) { "Invalid child type or missing asset in ${b.name}" }
                 val (w, h) = size(c.assetId)
                 require(c.x >= 0 && c.y >= 0 && c.x + w <= b.width && c.y + h <= b.height) { "Placement outside ${b.name}" }
             }

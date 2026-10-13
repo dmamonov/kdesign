@@ -39,7 +39,6 @@ The menu provides access to:
 
 - Levels.
 - Tiles.
-- Blocks.
 - Meta blocks.
 - Objects.
 - Gates.
@@ -207,14 +206,13 @@ Keep the tile name, drawing tools, and generation action close to the canvas.
 Tile names support references.
 Drawing changes autosave.
 
-## Block and meta-block editors
+## Meta-block editor
 
-A block editor combines tiles into a sparse composition.
-Its asset palette contains tiles.
+Tiles are directly placeable 1×1 blocks without separate wrapper definitions.
+There is no Blocks section.
+A meta-block editor combines tiles and other meta blocks.
+Its palette contains both types and excludes compositions that would introduce a cycle.
 Empty positions remain visually distinguishable from occupied positions.
-
-A meta-block editor combines blocks and other meta blocks.
-Its asset palette presents the corresponding reusable definitions.
 Nested compositions should offer navigation into their children and back to the parent context.
 
 Provide a properties view for semantic metadata.
@@ -421,14 +419,14 @@ Do not add history entries when editing or autosaving within the same view.
 
 ## Automatic tile creation
 
-Creating a tile also creates a same-sized block containing that shared tile at the origin.
+Creating a tile makes it immediately available as a 1×1 block in every compatible map palette.
 Start image generation automatically using the tile title as its description.
-Apply generated pixels to the original tile so its block and usages update together.
-Keep the tile and block editable if generation fails, and allow retry from the tile editor.
+Apply generated pixels to the original tile so all its usages update together.
+Keep the tile editable if generation fails, and allow retry from the tile editor.
 Do not overwrite pixels edited while generation was pending or recreate a deleted tile.
-Generating a new tile from a block editor also creates its matching reusable block.
+Generating a tile from a meta-block editor places it directly in the first available cell.
 
-New blocks and meta blocks default to 16 × 16 pixels.
+New meta blocks default to 16 × 16 pixels.
 
 ## Compact navigation panel
 
@@ -474,8 +472,14 @@ Each completed move is one autosaved, undoable edit.
 Enter in a single-line creation field activates Create.
 Keep Enter for newlines in multiline fields and for choosing reference suggestions.
 
-Deleting a tile also deletes every basic block containing it and every placement of those blocks.
-The confirmation shows how many block definitions and placements will be removed.
-Remove empty blocks cleans up basic blocks with no tiles, including their placements and references.
-Keep empty meta blocks and level roots.
-Both operations autosave as one undoable change.
+The confirmation shows how many placements and references will be removed.
+Deleting a tile removes its direct placements from all meta blocks and maps.
+Containing meta blocks and level roots remain available.
+Deletion autosaves as one undoable change.
+
+## Existing project migration
+
+Collapse redundant single-tile blocks into direct tile references.
+Preserve placement identities, coordinates, text references, and hotkey assignments.
+Promote authored compositions and blocks with custom semantics to meta blocks.
+Save a backup before migrating an existing project.
