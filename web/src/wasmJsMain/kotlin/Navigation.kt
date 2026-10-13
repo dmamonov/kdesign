@@ -15,13 +15,13 @@ fun restoreRoute() {
     fun value(key: String)=route[key]?.jsonPrimitive?.content ?: ""
     section=value("section").let {if(it=="Blocks") "Tiles" else it}.takeIf {it in sections} ?: "Levels"
     selected="";usageId="";highlightPath=emptyList();treeQuery=""
-    modal="";deletingId="";hotkeyConflict=null;mapSelection=null
+    modal="";deletingId="";inliningId="";hotkeyConflict=null;mapSelection=null
     val id=value("object")
     if(id in project.objectIds()) select(id)
     val tabs=when {
         selected.isEmpty() -> if(section=="Levels") listOf("World map","Table") else listOf("Library")
         currentLevel()!=null -> listOf("Canvas","Overview","Design brief")
-        project.concepts.any {it.id==selected} -> listOf("Design")
+        project.concepts.any {it.id==selected} || project.types.any {it.id==selected} -> listOf("Design")
         else -> listOf("Editor","Properties")
     }
     tab=value("tab").takeIf {it in tabs} ?: tabs.first()

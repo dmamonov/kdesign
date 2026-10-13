@@ -6,6 +6,8 @@ fun Project.deleteObject(id: String): Project {
     require(levels.none {it.rootId==id}) {
         "This meta block is a level root. Delete those levels or change their root before deleting it."
     }
+    require(id != EMPTY_TYPE_ID) { "The Empty type cannot be deleted" }
+    if(types.any {it.id==id}) require(typeUsages(id).isEmpty()) { "This type is still in use" }
     val removed=setOf(id) + if(tiles.any {it.id==id}) blocks.filter {
         it.kind=="block" && it.children.any {child->child.assetId==id}
     }.map {it.id} else emptyList()
@@ -14,6 +16,10 @@ fun Project.deleteObject(id: String): Project {
     }
     val deletedLevel=levels.find {it.id==id}
     val candidate=copy(
+        types=types.filterNot {it.id==id}.map {when(it) {
+            is BlockType.SimpleType -> it.copy(name=detach(it.name))
+            is BlockType.CompositeType -> it.copy(name=detach(it.name))
+        }},
         title=detach(title),
         tiles=tiles.filterNot {it.id==id}.map {it.copy(name=detach(it.name))},
         blocks=blocks.filterNot {it.id in removed}.map { b ->
@@ -36,9 +42,13 @@ fun Project.deleteObject(id: String): Project {
         }
         return candidate.blocks.any {it.id==target && it.kind=="meta"}
     }
-    return candidate.copy(blocks=candidate.blocks.map {b ->
+    return candidate.mapTypedValues { value -> when(value) {
+        is PrimitiveValue.ReferenceValue -> if(value.objectId in removed) value.copy(objectId=null) else value
+        is PrimitiveValue.StringValue -> value.copy(value=detach(value.value))
+        else -> value
+    } }.let { typed -> typed.copy(blocks=typed.blocks.map {b ->
         b.copy(portals=b.portals.filter(::destinationExists))
-    }).also {it.validate()}
+    }) }.also {it.validate()}
 }
 
 /** Remove unused empty graphic definitions, retaining meta blocks as design containers. */

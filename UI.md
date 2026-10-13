@@ -483,3 +483,47 @@ Collapse redundant single-tile blocks into direct tile references.
 Preserve placement identities, coordinates, text references, and hotkey assignments.
 Promote authored compositions and blocks with custom semantics to meta blocks.
 Save a backup before migrating an existing project.
+
+## Meta-block usages and inlining
+
+Show direct placement usage counts in meta-block card titles, sidebar titles, and the Editor tab.
+Count placements in reusable definitions rather than counting expanded level occurrences twice.
+Show Inline usages when a meta block is placed in another meta block.
+Replace all direct placements with its children, preserving offsets and assigning unique instance IDs.
+Keep the source definition, its properties, and its text references for reuse.
+Copy outgoing connections into the containing definitions and update paths to nested destinations.
+Require retargeting connections to the wrapper itself before removing that instance boundary.
+Inline all usages as one autosaved, undoable edit.
+
+Inline usages opens a confirmation dialog naming the meta block and its placement count.
+Only the dialog's Inline usages button performs the edit.
+Cancel closes the dialog without changing the project.
+
+## Types and typed values
+
+The Types section lists simple properties and composite types.
+Create a type using New type and choose Simple property or Composite type.
+Simple properties edit their name, primitive kind, default value, and enum options.
+Composite types add or remove shared parents and properties and show resolved defaults.
+All valid edits autosave and support Undo.
+
+Tile and meta-block Properties show a type selector and editable effective values.
+Each explicit override offers Reset to inherited.
+Map editors provide a placement selector for editing placement overrides.
+Placement values inherit from the referenced block unless explicitly overridden.
+Invalid type changes preserve saved values and show a validation error.
+
+## Deferred navigation sections
+
+Main navigation contains Levels, Tiles, Meta blocks, Types, and Map objects.
+Objects, Gates, Mechanics, Switches, Quests, Puzzles, and Inventory objects are deferred in TODO.md.
+Their existing data remains in the project.
+
+## Type hierarchy
+
+Show an expandable inheritance hierarchy in the Types sidebar and overview.
+Parents appear above their derived types.
+Parentless types appear under Empty without adding stored inheritance relationships.
+A type with multiple parents appears beneath each parent, sharing the same definition.
+Search retains ancestor paths and expands matching branches.
+Use distinct symbols for simple properties and composite types.

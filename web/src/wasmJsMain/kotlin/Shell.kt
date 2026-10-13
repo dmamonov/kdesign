@@ -2,7 +2,7 @@ package kdesign.web
 
 import kdesign.*
 
-val sections = listOf("Levels", "Tiles", "Meta blocks", "Objects") + categories.keys
+val sections = listOf("Levels", "Tiles", "Meta blocks", "Types", "Map objects")
 val sectionMemory = mutableMapOf<String, Pair<String, String>>()
 val expandedNodes = mutableSetOf<String>()
 var treeQuery = ""
@@ -22,6 +22,7 @@ fun switchSection(name: String) {
     treeQuery = ""
 }
 fun sectionItems(): List<String> = when(section) {
+    "Types" -> project.types.map {it.id}
     "Levels" -> project.levels.map { it.id }
     "Tiles" -> project.tiles.map { it.id }
     "Meta blocks" -> project.blocks.filter { it.kind == "meta" }.map { it.id }
@@ -30,7 +31,7 @@ fun sectionItems(): List<String> = when(section) {
 }
 fun createButton(compact: Boolean = false): String {
     val type = when { section in categories -> "Concepts"; section == "Objects" -> "Meta blocks"; else -> section }
-    val label = when(type) { "Levels" -> "level"; "Tiles" -> "tile"; "Concepts" -> "concept"; "Meta blocks" -> "meta block"; else -> "block" }
+    val label = when(type) { "Types" -> "type"; "Levels" -> "level"; "Tiles" -> "tile"; "Concepts" -> "concept"; "Meta blocks" -> "meta block"; else -> "block" }
     return button("+ New $label", "new", if(section in categories) section else "", type, if(compact) "primary tiny tree-new" else "primary")
 }
 fun objectIcon(id: String): String {
@@ -47,14 +48,18 @@ fun objectIcon(id: String): String {
     }
     return "<span class='object-icon' role='img' aria-label='${text(project.objectType(id))}' title='${text(project.objectType(id))}'>$symbol</span>"
 }
+fun usageCaption(id: String): String = if(project.blocks.any {it.id==id})
+    " · ${project.placementUsageCount(id)} usages" else ""
+
 fun treeView(): String {
+    if(section=="Types") return typeHierarchyView()
     val query = treeQuery.trim().lowercase()
     fun matches(id: String) = query.isEmpty() || project.displayText(project.name(id)).lowercase().contains(query) || id.lowercase().contains(query)
     fun node(id: String, depth: Int, children: String, expandable: Boolean): String {
         val open = id in expandedNodes || query.isNotEmpty()
         return "<div class='tree-row ${if(selected==id) "selected" else ""}' style='--depth:$depth'>" +
             (if(expandable) "<button class='tree-toggle' aria-label='${if(open) "Collapse" else "Expand"} ${text(project.name(id))}' aria-expanded='$open' ${attr("tree-toggle",id)}>${if(open) "▾" else "▸"}</button>" else "<span class='tree-spacer'></span>") +
-            button("${objectIcon(id)}<span>${text(project.name(id))}</span>","select",id,cls="tree-label") + "</div>" + if(open) children else ""
+            button("${objectIcon(id)}<span>${text(project.name(id))}${usageCaption(id)}</span>","select",id,cls="tree-label") + "</div>" + if(open) children else ""
     }
     fun levelNodes(parent: String?, depth: Int): String = project.levels.filter { it.parentId==parent }.joinToString("") { l ->
         val children = levelNodes(l.id, depth+1)
@@ -71,6 +76,7 @@ fun treeView(): String {
 }
 fun libraryView(): String {
     val items = sectionItems()
+    if(section=="Types") return "<section class='panel padded type-hierarchy'>${typeHierarchyView(true)}</section>"
     if(items.isEmpty()) return "<section class='panel empty'><h2>No ${text(section.lowercase())} yet</h2><p>Create an item to start designing.</p>${createButton()}</section>"
     if(section=="Tiles") return "<div class='tile-gallery'>" + items.joinToString("") {id ->
         "<article class='panel tile-card'>" +
@@ -80,7 +86,7 @@ fun libraryView(): String {
     return "<div class='library-grid'>" + items.joinToString("") { id ->
         val concept = project.concepts.find {it.id==id}
         "<article class='panel library-card'>" + (if(concept==null) "<div class='library-art'>${svg(id)}</div>" else "<span class='tag'>${text(concept.type)}</span>") +
-            "<h3>${rich(project.name(id))}</h3><p class='muted'>${if(concept!=null) rich(concept.description) else text(project.objectType(id))}</p><div class='concept-actions'>${button("Open", "select",id)}${button("Find usages","usages",id,cls="quiet")}</div></article>"
+            "<h3>${rich(project.name(id))}${usageCaption(id)}</h3><p class='muted'>${if(concept!=null) rich(concept.description) else text(project.objectType(id))}</p><div class='concept-actions'>${button("Open", "select",id)}${button("Find usages","usages",id,cls="quiet")}</div></article>"
     } + "</div>"
 }
 fun conceptWorkspace(): String {
@@ -92,20 +98,21 @@ fun renderShell() {
     if(selected.isNotEmpty() && selected !in project.objectIds()) selected=""
     val level=currentLevel(); val block=currentBlock(); val tile=currentTile()
     val concept=project.concepts.any {it.id==selected}
+    val type=project.types.any {it.id==selected}
     val root=selected.isEmpty()
-    val tabs=when {root && section=="Levels"->listOf("World map","Table");root->emptyList(); concept->listOf("Design"); level!=null->listOf("Canvas","Overview","Design brief");else->listOf("Editor","Properties")}
+    val tabs=when {root && section=="Levels"->listOf("World map","Table");root->emptyList(); concept || type->listOf("Design"); level!=null->listOf("Canvas","Overview","Design brief");else->listOf("Editor","Properties")}
     mount("""
       <div class='app-shell'>
       <header class='app-top'><div class='project-brand'><span class='brand-icon'>K</span><div><strong>${rich(project.title)}</strong><small>Adventure designer</small></div>${button("Edit title","new",v="Project",cls="tiny quiet")}</div><div class='header-actions'><span class='save-state' role='status'>${text(statusText())}</span>${button("↶ Undo","undo",cls="quiet")}${button("Retry / save now","save",cls="quiet")}</div></header>
       <nav class='category-nav' aria-label='Object categories'>${sections.joinToString("") {"<button ${attr("section",it)} aria-current='${if(section==it) "page" else "false"}' class='${if(section==it) "active" else ""}'>${esc(it)}</button>"}}</nav>
       <aside class='navigation-panel' aria-label='Category navigation'><div class='tree-heading'>${button(text(section),"category-root",cls="tree-caption")}${createButton(true)}</div><div class='tree-search'><input id='tree-search' aria-label='Search ${text(section.lowercase())}' value='${esc(treeQuery)}' placeholder='Search'></div><div class='explorer'>${treeView()}</div></aside>
       <main data-view='${esc(section)}:${esc(selected)}:${esc(tab)}'>
-      ${if(locations.isNotEmpty() || !root) "<div class='workspace-location'>${if(locations.isNotEmpty()) button("← Back","navigate-back",cls="tiny quiet") else ""}${if(!root) button("Find usages","usages",selected,cls="quiet")+button("Delete","delete-request",selected,cls="quiet danger") else ""}</div>" else ""}
+      ${if(locations.isNotEmpty() || !root) "<div class='workspace-location'>${if(locations.isNotEmpty()) button("← Back","navigate-back",cls="tiny quiet") else ""}${if(!root) button("Find usages","usages",selected,cls="quiet")+button("Delete","delete-request",selected,cls="quiet danger")+(if(block!=null && level==null && project.placementUsageCount(block.id)>0) button("Inline usages","inline-meta",block.id,cls="quiet") else "") else ""}</div>" else ""}
       ${if(message.isNotBlank()) "<div class='notice' role='status'>${text(message)}${button("Dismiss","dismiss",cls="tiny")}</div>" else ""}
-      ${if(tabs.isNotEmpty()) "<div class='tabbar'>${tabs.joinToString("") {button(when(it){"Canvas"->"Map";"Design brief"->"Design";else->it},"tab",it,cls=if(tab==it) "active" else "")}}<span>${if(tile!=null) "${tile.size} × ${tile.size} · NES PALETTE" else if(block!=null) "${block.width} × ${block.height} · ${block.children.size} PLACEMENTS" else if(root) "" else "DESIGN CONCEPT"}</span></div>" else ""}
+      ${if(tabs.isNotEmpty()) "<div class='tabbar'>${tabs.joinToString("") {button(when(it){"Canvas"->"Map";"Design brief"->"Design";"Editor"->if(block!=null) "Editor (${project.placementUsageCount(block.id)} usages)" else it;else->it},"tab",it,cls=if(tab==it) "active" else "")}}<span>${if(tile!=null) "${tile.size} × ${tile.size} · NES PALETTE" else if(block!=null) "${block.width} × ${block.height} · ${block.children.size} PLACEMENTS" else if(root) "" else "DESIGN CONCEPT"}</span></div>" else ""}
       ${hotkeyConflict?.let { (asset,key) -> "<div class='notice' role='alert'><span>Key $key is assigned to ${text(project.name(project.hotkeys[key] ?: ""))}. Reassign it to ${text(project.name(asset))}?</span><div>${button("Reassign key","hotkey-confirm")}${button("Cancel","hotkey-cancel")}</div></div>" } ?: ""}
-      <div class='page-body'>${when {root && section=="Levels"->if(tab=="Table") tableView() else worldMapView();root->libraryView();concept->conceptWorkspace();tab=="Overview" && level!=null->worldMapView(level);tab=="Design brief" && level!=null->briefView(level);tab=="Properties"->propertiesView();tile!=null->tileView(tile);block!=null->canvasView(block,level);else->libraryView()}}</div></main></div>
-      ${if(deletingId.isNotBlank()) deletionView() else ""}${if(usageId.isNotBlank()) usagesView() else ""}${if(modal.isNotBlank()) modalView() else ""}
+      <div class='page-body'>${when {root && section=="Levels"->if(tab=="Table") tableView() else worldMapView();root->libraryView();type->typeWorkspace();concept->conceptWorkspace();tab=="Overview" && level!=null->worldMapView(level);tab=="Design brief" && level!=null->briefView(level);tab=="Properties"->propertiesView()+typedProperties(selected);tile!=null->tileView(tile);block!=null->canvasView(block,level);else->libraryView()}}</div></main></div>
+      ${if(inliningId.isNotBlank()) inlineConfirmationView() else ""}${if(deletingId.isNotBlank()) deletionView() else ""}${if(usageId.isNotBlank()) usagesView() else ""}${if(modal.isNotBlank()) modalView() else ""}
     """.trimIndent())
 }
 

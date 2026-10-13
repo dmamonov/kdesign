@@ -5,7 +5,7 @@ import kotlinx.serialization.encodeToString
 /** Collapse redundant tile wrappers; retain authored compositions and semantics as meta blocks. */
 fun Project.simplifyBlocks(): Project {
     validate()
-    if (version == 2) return this
+    if (version >= 2) return this
     val aliases = blocks.filter { b ->
         val child = b.children.singleOrNull()
         val tile = tiles.find { it.id == child?.assetId }

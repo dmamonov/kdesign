@@ -32,7 +32,7 @@ class FileStore(directory: Path) {
         require(path != root) { "A file path is required" }
         val saved = if (path == root.resolve("project.json")) {
             val project = json.decodeFromString<Project>(content.toString(Charsets.UTF_8))
-            json.encodeToString(project.simplifyBlocks()).toByteArray(Charsets.UTF_8)
+            json.encodeToString(project.simplifyBlocks().let { if(it.version < 3) it.withBlockTypes() else it }.also { it.validate() }).toByteArray(Charsets.UTF_8)
         } else content
         Files.createDirectories(path.parent)
         val temp = Files.createTempFile(path.parent, ".write-", ".tmp")
@@ -104,8 +104,8 @@ fun main() {
     if (!Files.exists(store.resolve("project.json"))) store.write("project.json", json.encodeToString(sampleProject()))
     val original = store.read("project.json")
     val project = json.decodeFromString<Project>(original)
-    if (project.version == 1) {
-        val migrated = project.simplifyBlocks()
+    if (project.version < 3) {
+        val migrated = project.simplifyBlocks().let { if(it.version < 3) it.withBlockTypes() else it }.also { it.validate() }
         store.write("backups/project-before-tile-blocks-${java.util.UUID.randomUUID()}.json", original)
         store.write("project.json", json.encodeToString(migrated))
     }

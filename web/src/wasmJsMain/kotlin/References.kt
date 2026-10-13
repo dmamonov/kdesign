@@ -32,9 +32,13 @@ fun openReference(id: String) {
 }
 fun openTextUsage(id: String, field: String) {
     openReference(id)
+    if(field.startsWith("Placement:")) {
+        highlightPath=listOf(field.removePrefix("Placement:"));tab="Editor";return
+    }
     if(project.levels.any {it.id==id}) tab="Design brief"
     if(project.tiles.any {it.id==id} || project.blocks.any {it.id==id}) tab="Properties"
     pendingFieldFocus=when {
+        project.types.any {it.id==id} -> if(field=="Name") "type-name" else "type-default"
         id.isEmpty() -> "new-name"
         project.concepts.any {it.id==id} -> if(field=="Name") "new-name" else "concept-description"
         project.levels.any {it.id==id} -> if(field=="Title") "title" else levelFields.getOrNull(fieldLabels.indexOf(field)) ?: "title"

@@ -1,7 +1,7 @@
 package kdesign
 
 /** A tile is directly placeable as a one-cell block. */
-fun Project.addTile(tile: Tile): Project = copy(tiles=tiles+tile).also {it.validate()}
+fun Project.addTile(tile: Tile): Project = copy(tiles=tiles+tile).let {if(version>=3) it.withBlockTypes(setOf(tile.id)) else it}.also {it.validate()}
 
 /** Never resurrect a deleted tile or overwrite drawing done while generation was running. */
 fun Project.applyGeneratedPixels(original: Tile, pixels: List<Int>): Project {

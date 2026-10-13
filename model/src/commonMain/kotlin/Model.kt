@@ -22,26 +22,26 @@ val categories = linkedMapOf(
 val levelFields = listOf("description", "playerMechanics", "playerGoals", "designGoals", "emotionalBaits", "characters", "enemies", "objects")
 val fieldLabels = listOf("Description", "Player mechanics", "Player goals", "Design goals", "Emotional baits", "Characters encountered", "Enemies encountered", "Objects encountered")
 
-@Serializable data class Tile(val id: String, val name: String, val size: Int = 16, val pixels: List<Int> = List(size * size) { -1 })
+@Serializable data class Tile(val id: String, val name: String, val size: Int = 16, val pixels: List<Int> = List(size * size) { -1 }, val typeId: String = EMPTY_TYPE_ID, val overrides: Map<String, PrimitiveValue> = emptyMap())
 // Positions are pixels in the parent coordinate space. Missing cells are transparent.
-@Serializable data class Placement(val id: String, val assetId: String, val x: Int, val y: Int)
+@Serializable data class Placement(val id: String, val assetId: String, val x: Int, val y: Int, val overrides: Map<String, PrimitiveValue> = emptyMap())
 // A portal points to an instance inside a level, not merely its reusable definition.
 @Serializable data class Portal(val label: String, val targetLevelId: String, val targetPath: List<String> = emptyList())
-@Serializable data class Block(val id: String, val name: String, val kind: String = "block", val width: Int = 16, val height: Int = 16, val children: List<Placement> = emptyList(), val properties: Map<String, String> = emptyMap(), val conceptIds: List<String> = emptyList(), val portals: List<Portal> = emptyList())
+@Serializable data class Block(val id: String, val name: String, val kind: String = "block", val width: Int = 16, val height: Int = 16, val children: List<Placement> = emptyList(), val properties: Map<String, String> = emptyMap(), val conceptIds: List<String> = emptyList(), val portals: List<Portal> = emptyList(), val typeId: String = EMPTY_TYPE_ID, val overrides: Map<String, PrimitiveValue> = emptyMap())
 @Serializable data class Level(val id: String, val title: String, val rootId: String, val parentId: String? = null, val notes: Map<String, String> = emptyMap())
 @Serializable data class Concept(val id: String, val name: String, val category: String, val type: String, val description: String = "")
-@Serializable data class Project(val version: Int = 1, val title: String = "Moss & Ember", val tiles: List<Tile> = emptyList(), val blocks: List<Block> = emptyList(), val levels: List<Level> = emptyList(), val concepts: List<Concept> = emptyList(), val hotkeys: Map<String, String> = emptyMap()) {
-    fun name(id: String): String = tiles.find { it.id == id }?.name ?: blocks.find { it.id == id }?.name ?: levels.find { it.id == id }?.title ?: concepts.find { it.id == id }?.name ?: id
+@Serializable data class Project(val version: Int = 1, val title: String = "Moss & Ember", val tiles: List<Tile> = emptyList(), val blocks: List<Block> = emptyList(), val levels: List<Level> = emptyList(), val concepts: List<Concept> = emptyList(), val hotkeys: Map<String, String> = emptyMap(), val types: List<BlockType> = listOf(BlockType.Empty)) {
+    fun name(id: String): String = tiles.find { it.id == id }?.name ?: blocks.find { it.id == id }?.name ?: levels.find { it.id == id }?.title ?: concepts.find { it.id == id }?.name ?: types.find { it.id == id }?.name ?: id
     fun size(id: String): Pair<Int, Int> = tiles.find { it.id == id }?.let { it.size to it.size } ?: blocks.find { it.id == id }?.let { it.width to it.height } ?: (16 to 16)
     fun validate() {
-        require(version in 1..2) { "Unsupported project version" }
-        val ids = tiles.map { it.id } + blocks.map { it.id } + levels.map { it.id } + concepts.map { it.id }
+        require(version in 1..3) { "Unsupported project version" }
+        val ids = objectIds()
         require(ids.all { it.isNotBlank() } && ids.distinct().size == ids.size) { "Entity IDs must be unique and nonempty" }
         require(hotkeys.keys.all {it.length==1 && (it[0] in '0'..'9' || it[0] in 'a'..'z')} && hotkeys.values.all {id -> tiles.any {it.id==id} || blocks.any {it.id==id}} && hotkeys.values.distinct().size==hotkeys.size) { "Invalid asset hotkeys" }
         textReferences().forEach { require(it.targetId in ids) { "Missing text reference [[${it.targetId}]] in ${it.field}" } }
         tiles.forEach { require(it.size in listOf(8, 16) && it.pixels.size == it.size * it.size && it.pixels.all { p -> p in -1..63 }) { "Invalid tile ${it.name}" } }
         blocks.forEach { b ->
-            require((if (version == 2) b.kind == "meta" else b.kind in listOf("block", "meta")) && b.width in 8..4096 && b.height in 8..4096) { "Invalid block dimensions or kind" }
+            require((if (version >= 2) b.kind == "meta" else b.kind in listOf("block", "meta")) && b.width in 8..4096 && b.height in 8..4096) { "Invalid block dimensions or kind" }
             require(b.children.map { it.id }.distinct().size == b.children.size && b.children.all { it.id.isNotBlank() }) { "Placement IDs must be unique within a block" }
             b.children.forEach { c ->
                 require(if (b.kind == "block") tiles.any { it.id == c.assetId } else tiles.any { it.id == c.assetId } || blocks.any { it.id == c.assetId }) { "Invalid child type or missing asset in ${b.name}" }
@@ -56,6 +56,7 @@ val fieldLabels = listOf("Description", "Player mechanics", "Player goals", "Des
                 require(blocks.any { it.id == current && it.kind == "meta" }) { "Portal destination must be a meta block" }
             }
         }
+        validateTypes()
         val done = mutableSetOf<String>()
         fun visit(id: String, stack: Set<String>) {
             require(id !in stack) { "Cyclic composition" }
@@ -75,7 +76,7 @@ val fieldLabels = listOf("Description", "Player mechanics", "Player goals", "Des
         concepts.forEach { require(it.type in (categories[it.category] ?: emptyList())) { "Invalid concept category/type" } }
     }
     fun usages(assetId: String): List<Usage> {
-        val result = mutableListOf<Usage>()
+        val result = typeUsages(assetId).toMutableList()
         blocks.forEach { b -> b.children.filter { it.assetId == assetId }.forEach { result += Usage(null, b.id, listOf(it.id), "Direct placement in ${b.name}") } }
         blocks.filter { assetId in it.conceptIds }.forEach { result += Usage(null, it.id, emptyList(), "Concept attached to ${it.name}") }
         fun walk(level: Level, id: String, path: List<String>, seen: Set<String>) {

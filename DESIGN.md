@@ -233,3 +233,34 @@ The starting design brings together:
 - Block hotkeys, area selection and filling, and an around-cursor block picker.
 
 Further implementation choices should support these requirements without weakening backtracing.
+
+## Type system
+
+Each tile and meta block has a type identified by a stable ID.
+Every existing graphic receives a named composite type during migration.
+Legacy semantic properties become simple string properties with the same defaults.
+New graphics also receive their own named composite type.
+The shared Empty type is immutable and contains no properties.
+
+A simple type is a named property with a typed default value.
+Primitive values are String, Int, Enum, and nullable Object Reference.
+Object references identify reusable definitions, levels, concepts, or types.
+They do not identify a particular nested instance.
+Enum options are unique strings; removing an option used by an override fails validation.
+
+A composite type references simple types and other composites by ID.
+Inheritance flattens into simple properties and deduplicates properties inherited through many paths.
+Cycles and different properties with the same name are rejected.
+
+Resolve a value from its simple default, then the block override, then the placement override.
+Only explicit overrides are stored, keyed by the simple type ID.
+Reset removes an override and restores inheritance.
+Changing a schema must leave every existing override valid.
+Types in use cannot be deleted.
+Deleting an object clears typed references to it.
+Typed references and type assignments participate in Find usages.
+
+Placement overrides belong to the containing reusable meta-block definition.
+They affect every occurrence of that definition.
+Per-level overrides of deeply nested occurrences are not yet supported.
+Inlining a wrapper with typed properties is blocked to avoid losing its semantics.

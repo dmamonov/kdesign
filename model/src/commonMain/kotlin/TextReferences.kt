@@ -3,13 +3,14 @@ package kdesign
 /** Stored as stable IDs in ordinary strings, including titles: [[block-mushroom]]. */
 val referencePattern = Regex("\\[\\[([^\\[\\]\\r\\n]+)\\]\\]")
 data class TextReference(val ownerId: String, val field: String, val targetId: String, val offset: Int)
-fun Project.objectIds(): List<String> = tiles.map { it.id } + blocks.map { it.id } + levels.map { it.id } + concepts.map { it.id }
+fun Project.objectIds(): List<String> = tiles.map { it.id } + blocks.map { it.id } + levels.map { it.id } + concepts.map { it.id } + types.map { it.id }
 fun Project.objectType(id: String): String = when {
     tiles.any { it.id == id } -> "Tile"
     blocks.any { it.id == id && it.kind == "block" } -> "Block"
     blocks.any { it.id == id } -> "Meta block"
     levels.any { it.id == id } -> "Level"
     concepts.any { it.id == id } -> "Concept"
+    types.any { it.id == id } -> "Type"
     else -> "Missing object"
 }
 /** Name references may form cycles. Bound expansion and show the stable ID at a cycle. */
@@ -25,6 +26,16 @@ fun Project.textReferences(): List<TextReference> = buildList {
     fun scan(owner: String, field: String, text: String) {
         referencePattern.findAll(text).forEach { add(TextReference(owner, field, it.groupValues[1], it.range.first)) }
     }
+    fun typed(owner: String, values: Map<String, PrimitiveValue>) {
+        values.forEach { (id,value) -> if(value is PrimitiveValue.StringValue)
+            scan(owner, "Typed value: $id", value.value) }
+    }
+    types.forEach {
+        scan(it.id,"Name",it.name)
+        if(it is BlockType.SimpleType) typed(it.id,mapOf(it.id to it.defaultValue))
+    }
+    tiles.forEach { typed(it.id,it.overrides) }
+    blocks.forEach { b -> typed(b.id,b.overrides); b.children.forEach {typed(b.id,it.overrides)} }
     scan("", "Project title", title)
     tiles.forEach { scan(it.id, "Name", it.name) }
     blocks.forEach { b ->

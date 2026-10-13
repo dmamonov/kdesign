@@ -79,7 +79,7 @@ fun canvasView(b: Block, l: Level?): String {
     if(selectionOwner!=b.id) {mapSelection=null;selectionOwner=b.id}
     if(assetBrush !in assets) assetBrush=assets.firstOrNull() ?: ""
     return """<div class='canvas-layout'><div class='canvas-main'><section class='panel'><div class='panel-bar'><span>${if(l!=null) "Level composition" else "Block composition"}<small><select class='snap-select' aria-label='Grid size' data-change='snap'><option value='16' ${if(snap==16) "selected" else ""}>16 px grid</option><option value='8' ${if(snap==8) "selected" else ""}>8 px grid</option></select></small></span>${mapToolbar()}</div>
-    <div class='scene-scroll'><div class='scene ${if(l!=null) "forest" else ""}' tabindex='0' aria-label='Map canvas' data-map-id='${esc(b.id)}' data-map-tool='$mapTool' data-width='${b.width}' data-height='${b.height}' data-snap='$snap' style='width:${maxOf(320,b.width*2)}px;height:${maxOf(320,b.width*2)*b.height/b.width}px'>${svg(b.id,b.width,b.height,true)}${if(l!=null) screenGrid(b) else ""}${selectionOverlay(b)}<div class='placement-grid' style='grid-template-columns:repeat(${(b.width+snap-1)/snap},${snap*100.0/b.width}%);grid-template-rows:repeat(${(b.height+snap-1)/snap},${snap*100.0/b.height}%)'>${(0 until (b.height+snap-1)/snap).joinToString("") { y -> (0 until (b.width+snap-1)/snap).joinToString("") { x -> "<button title='${if(mapTool=="inspect") "Inspect" else if(mapTool=="erase") "Remove" else if(mapTool=="select") "Select" else "Place ${text(project.name(assetBrush))}"} at ${x*snap},${y*snap}' aria-label='Cell $x,$y' ${attr("place","${x*snap},${y*snap}")}></button>" } }}</div></div></div><div class='panel-caption'><span>${if(mapTool=="inspect") "Inspect a placed instance" else if(mapTool=="erase") "Remove mode" else if(mapTool=="select") "Select area" else "Placing: ${text(project.name(assetBrush))}"}</span><span>Double-click: place · Drag: select · Ctrl/⌘ C/X/V: copy/cut/paste · Space: fill · Enter: picker · Shift + letter/digit: bind brush</span></div>${selectionBar()}</section>
+    <div class='scene-scroll'><div class='scene ${if(l!=null) "forest" else ""}' tabindex='0' aria-label='Map canvas' data-map-id='${esc(b.id)}' data-map-tool='$mapTool' data-width='${b.width}' data-height='${b.height}' data-snap='$snap' style='width:${maxOf(320,b.width*2)}px;height:${maxOf(320,b.width*2)*b.height/b.width}px'>${svg(b.id,b.width,b.height,true)}${if(l!=null) screenGrid(b) else ""}${selectionOverlay(b)}<div class='placement-grid' style='grid-template-columns:repeat(${(b.width+snap-1)/snap},${snap*100.0/b.width}%);grid-template-rows:repeat(${(b.height+snap-1)/snap},${snap*100.0/b.height}%)'>${(0 until (b.height+snap-1)/snap).joinToString("") { y -> (0 until (b.width+snap-1)/snap).joinToString("") { x -> "<button title='${if(mapTool=="inspect") "Inspect" else if(mapTool=="erase") "Remove" else if(mapTool=="select") "Select" else "Place ${text(project.name(assetBrush))}"} at ${x*snap},${y*snap}' aria-label='Cell $x,$y' ${attr("place","${x*snap},${y*snap}")}></button>" } }}</div></div></div><div class='panel-caption'><span>${if(mapTool=="inspect") "Inspect a placed instance" else if(mapTool=="erase") "Remove mode" else if(mapTool=="select") "Select area" else "Placing: ${text(project.name(assetBrush))}"}</span><span>Double-click: place · Drag: select · Ctrl/⌘ C/X/V: copy/cut/paste · Space: fill · Enter: picker · Shift + letter/digit: bind brush</span></div>${selectionBar()}</section>${instanceTypePanel(b)}
     </div><aside class='panel asset-tray'><div class='panel-bar'>${if(b.kind=="block") "TILE PALETTE" else "BLOCK PALETTE"}<small>Shared definitions</small></div><div class='asset-list'>${assets.joinToString("") { mapAssetCard(it) }}</div></aside>
     </div>"""
 }
@@ -91,7 +91,7 @@ fun tableField(level: Level, key: String, label: String, content: String): Strin
 
 fun propertiesView(): String {
     val b=currentBlock(); val t=currentTile()
-    return "<section class='panel padded'><div class='section-title'><h3>Definition properties</h3><span class='muted'>Changes save automatically</span></div>${field("name","Name", t?.name ?: b?.name ?: "")}<p class='muted'>Stable ID: ${esc(selected)}</p>" + if(b!=null) "<div class='form-grid'>${field("width","Width (pixels)",b.width.toString())}${field("height","Height (pixels)",b.height.toString())}${field("properties","Semantic properties · one key=value per line",b.properties.entries.joinToString("\n"){"${it.key}=${it.value}"},true)}<label class='field'>Linked concepts<select id='concept'><option value=''>No concept</option>${project.concepts.joinToString(""){"<option value='${esc(it.id)}' ${if(it.id in b.conceptIds) "selected" else ""}>${text(it.category)} / ${text(it.name)}</option>"}}</select><small>This first editor links one concept per definition.</small></label></div><h3>Portals</h3>${b.portals.mapIndexed { i,p -> "<div class='instance'><span>${text(p.label)} → ${text(project.name(p.targetLevelId))} / ${text(p.targetPath.joinToString("/"))}</span>${button("Remove","portal-remove",i.toString(),cls="tiny")}</div>" }.joinToString("")}</section>" else "<p class='muted'>${t?.size} × ${t?.size} pixels · NES palette · transparent background</p></section>"
+    return "<section class='panel padded'><div class='section-title'><h3>Definition properties</h3><span class='muted'>Changes save automatically</span></div>${field("name","Name", t?.name ?: b?.name ?: "")}<p class='muted'>Stable ID: ${esc(selected)}</p>" + if(b!=null) "<div class='form-grid'>${field("width","Width (pixels)",b.width.toString())}${field("height","Height (pixels)",b.height.toString())}<label class='field'>Linked concepts<select id='concept'><option value=''>No concept</option>${project.concepts.joinToString(""){"<option value='${esc(it.id)}' ${if(it.id in b.conceptIds) "selected" else ""}>${text(it.category)} / ${text(it.name)}</option>"}}</select><small>This first editor links one concept per definition.</small></label></div><h3>Portals</h3>${b.portals.mapIndexed { i,p -> "<div class='instance'><span>${text(p.label)} → ${text(project.name(p.targetLevelId))} / ${text(p.targetPath.joinToString("/"))}</span>${button("Remove","portal-remove",i.toString(),cls="tiny")}</div>" }.joinToString("")}</section>" else "<p class='muted'>${t?.size} × ${t?.size} pixels · NES palette · transparent background</p></section>"
 }
 fun usagesView(): String {
     val usages=project.usages(usageId)
@@ -101,6 +101,7 @@ fun modalView(): String {
     val concept=project.concepts.find {it.id==selected}
     val title=if(modal=="Project") "Edit project title" else if(modal=="Portal") "Connect two places" else if(modal=="Edit concept") "Edit concept" else "Create ${modal.lowercase().removeSuffix("s")}"
     return "<div class='overlay'><section class='dialog' role='dialog' aria-modal='true' aria-label='$title'><div class='section-title'><h2>$title</h2>${button("×","close-modal",cls="tiny")}</div>${if(message.isNotBlank()) "<p class='modal-error' role='alert'>${text(message)}</p>" else ""}" + when(modal) {
+        "Types" -> field("new-name","Name") + typeSelect("new-type-kind","Kind","Composite",listOf("Composite" to "Composite type","Simple" to "Simple property"))
         "Project" -> field("new-name","Project title",project.title)
         "Portal" -> field("new-name","Portal label","Enter passage") + "<label class='field'>Destination space and instance<select id='portal-destination'>${portalDestinationOptions()}</select></label><p class='muted'>Choose a level root or a named meta-block occurrence. Paths distinguish repeated instances.</p>"
         "Concepts", "Edit concept" -> field("new-name","Name",concept?.takeIf {modal=="Edit concept"}?.name ?: "") + "<label class='field'>Category<select id='category' data-change='category'>${categories.keys.joinToString(""){ "<option ${if(it==(if(modal=="Edit concept") concept?.category else conceptCategory)) "selected" else ""}>${text(it)}</option>" }}</select></label><label class='field'>Type<select id='concept-type'>${categories[conceptCategory]!!.joinToString(""){"<option ${if(it==concept?.type) "selected" else ""}>${text(it)}</option>"}}</select></label>"+field("concept-description","Description",concept?.takeIf {modal=="Edit concept"}?.description ?: "",true)
@@ -114,9 +115,9 @@ fun select(id: String) {
     selected=id; highlightPath=emptyList()
     var ancestor=project.levels.find {it.id==id}?.parentId
     while(ancestor!=null) {expandedNodes.add(ancestor);ancestor=project.levels.find {it.id==ancestor}?.parentId}
-    section=when { project.concepts.any {it.id==id}->project.concepts.first {it.id==id}.category; section=="Objects" && project.blocks.any {it.id==id}->"Objects"; project.tiles.any {it.id==id}->"Tiles"; project.levels.any {it.id==id}->"Levels"; else->"Meta blocks" }
+    section=when { project.types.any {it.id==id}->"Types"; project.concepts.any {it.id==id}->project.concepts.first {it.id==id}.category; section=="Objects" && project.blocks.any {it.id==id}->"Objects"; project.tiles.any {it.id==id}->"Tiles"; project.levels.any {it.id==id}->"Levels"; else->"Meta blocks" }
     if(section!=previousSection) treeQuery=""
-    tab=if(section=="Levels") "Canvas" else if(section in categories) "Design" else "Editor"
+    tab=if(section=="Levels") "Canvas" else if(section in categories || section=="Types") "Design" else "Editor"
 }
 
 fun load() {
@@ -131,6 +132,12 @@ fun create() {
     val name=value("new-name").trim(); require(name.isNotBlank()) { "Enter a name" }
     val id=uuid()
     when(modal) {
+        "Types" -> {
+            val type: BlockType=if(value("new-type-kind")=="Simple")
+                BlockType.SimpleType(id,name,PrimitiveValue.StringValue(""))
+                else BlockType.CompositeType(id,name)
+            change {it.copy(types=it.types+type)};select(id)
+        }
         "Project" -> change {it.copy(title=name)}
         "Tiles" -> {
             require(!generating) {"Wait for the current generation to finish before creating another tile"}
@@ -143,7 +150,7 @@ fun create() {
         "Meta blocks", "Levels" -> {
             val b=Block(id,name,"meta",value("new-width").toInt(),value("new-height").toInt())
             val l=if(modal=="Levels") Level(uuid(),name,id,value("new-parent").ifBlank {null}) else null
-            change {it.copy(blocks=it.blocks+b, levels=it.levels+listOfNotNull(l))}; select(l?.id ?: id)
+            change {it.copy(blocks=it.blocks+b, levels=it.levels+listOfNotNull(l)).withBlockTypes(setOf(b.id))}; select(l?.id ?: id)
         }
         "Portal" -> { val b=currentBlock()!!; val destination=json.parseToJsonElement(value("portal-destination")).jsonArray.map {it.jsonPrimitive.content}; val p=Portal(name,destination.first(),destination.drop(1)); change {it.copy(blocks=it.blocks.map { if(it.id==b.id) it.copy(portals=it.portals+p) else it })} }
         "Concepts", "Edit concept" -> { val c=Concept(if(modal=="Edit concept") selected else id,name,value("category"),value("concept-type"),value("concept-description")); change {it.copy(concepts=it.concepts.filterNot {it.id==c.id}+c)};select(c.id) }
@@ -198,6 +205,20 @@ fun action(kind: String, id: String, v: String) {
                 change {it.cleanupEmptyBlocks()}
                 message="Removed ${before-project.blocks.size} empty blocks and their placements. Undo restores them."
             }
+            "type-parent-remove" -> change {p -> p.copy(types=p.types.map {
+                if(it.id==selected && it is BlockType.CompositeType) it.copy(parentTypes=it.parentTypes-id) else it
+            })}
+            "type-reset" -> change {it.editOverrides(selected,id,null,v)}
+            "inline-meta" -> {inliningId=id;message=""}
+            "inline-cancel" -> {inliningId="";message=""}
+            "inline-confirm" -> {
+                require(id==inliningId && id.isNotBlank()) {"Select a meta block to inline first"}
+                val count=project.placementUsageCount(id)
+                change {it.inlineMetaBlock(id,::uuid)}
+                inliningId=""
+                highlightPath=emptyList()
+                message="Inlined $count usages. The reusable definition is kept. Undo restores placements."
+            }
             "delete-request" -> {deletingId=id}
             "delete-cancel" -> deletingId=""
             "delete-confirm" -> {
@@ -227,8 +248,10 @@ fun action(kind: String, id: String, v: String) {
             "dismiss" -> message=""
             "section" -> switchSection(id)
             "category-root" -> {selected="";tab=if(section=="Levels") "Table" else "Library"}
+            "type-tree-toggle" -> {if(!collapsedTypes.add(id)) collapsedTypes.remove(id)}
             "tree-toggle" -> {if(!expandedNodes.add(id)) expandedNodes.remove(id)}
-            "tree-search" -> {treeQuery=v;refreshTree(treeView());return}
+            "tree-search" -> {treeQuery=v;refreshTree(treeView());if(section=="Types" && selected.isEmpty()) refreshTypeOverview(typeHierarchyView(true));return}
+            "instance-type-select" -> {highlightPath=listOf(v)}
             "instance-open" -> {select(id);highlightPath=listOf(v);message="Selected instance: $v"}
             "navigate-back" -> if(locations.isNotEmpty()) {val location=locations.removeAt(locations.lastIndex);section=location.section;selected=location.selected;tab=location.tab;usageId=location.usage;highlightPath=location.path;treeQuery=location.query}
             "select", "open" -> select(id)
