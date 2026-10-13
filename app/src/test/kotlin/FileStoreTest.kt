@@ -4,6 +4,49 @@ import kotlinx.serialization.encodeToString
 import java.nio.file.Files
 import kotlin.test.*
 class FileStoreTest {
+    @Test fun rejectsStaleAndUnversionedWritesAndPreservesHistory() {
+        val dir=Files.createTempDirectory("kdesign-version-test")
+        try {
+            val store=FileStore(dir)
+            store.write("project.json",json.encodeToString(sampleProject()))
+            val original=store.snapshot("project.json")
+            assertFailsWith<VersionRequired> {
+                store.conditionalWrite("project.json",original.content,null,false)
+            }
+            val changed=json.decodeFromString<Project>(original.content).copy(title="New title")
+            val saved=store.conditionalWrite("project.json",json.encodeToString(changed),original.version,false)
+            assertNotEquals(original.version,saved.version)
+            assertEquals(original.content,store.read("backups/project-${original.version.trim('"')}.json"))
+            assertFailsWith<VersionConflict> {
+                store.conditionalWrite("project.json",original.content,original.version,false)
+            }
+            assertEquals(saved,FileStore(dir).snapshot("project.json"))
+            assertFails {store.conditionalWrite("project.json","invalid",saved.version,false)}
+            assertEquals(saved,store.snapshot("project.json"))
+            Files.writeString(dir.resolve("project.json"),original.content)
+            assertFailsWith<VersionConflict> {
+                store.conditionalWrite("project.json",saved.content,saved.version,false)
+            }
+        } finally {dir.toFile().deleteRecursively()}
+    }
+    @Test fun createOnlyAndConcurrentSaves() {
+        val dir=Files.createTempDirectory("kdesign-concurrent-test")
+        val pool=java.util.concurrent.Executors.newFixedThreadPool(2)
+        try {
+            val store=FileStore(dir)
+            val initial=store.conditionalWrite("notes.txt","initial",null,true)
+            assertFailsWith<VersionConflict> {store.conditionalWrite("notes.txt","other",null,true)}
+            val start=java.util.concurrent.CountDownLatch(1)
+            val tasks=(1..2).map { i -> pool.submit<Boolean> {
+                start.await()
+                try {store.conditionalWrite("notes.txt","edit $i",initial.version,false);true}
+                catch(_: VersionConflict) {false}
+            } }
+            start.countDown()
+            assertEquals(1,tasks.count {it.get()})
+        } finally {pool.shutdownNow();dir.toFile().deleteRecursively()}
+    }
+
     @Test fun binaryWritesPreserveBytesAndValidatePaths() {
         val dir=Files.createTempDirectory("kdesign-binary-test")
         try {

@@ -40,17 +40,10 @@ The menu provides access to:
 - Levels.
 - Tiles.
 - Meta blocks.
-- Objects.
-- Gates.
-- Mechanics.
-- Switches.
-- Quests.
-- Puzzles.
-- Inventory objects.
-- Map objects.
+- Types.
 
 ```text
-[LEVELS] [TILES] [BLOCKS] [META BLOCKS] [OBJECTS] [GATES] [MECHANICS] [...]
+[LEVELS] [TILES] [META BLOCKS] [TYPES]
 ```
 
 When the categories do not fit, provide horizontal scrolling or an overflow menu.
@@ -515,8 +508,9 @@ Invalid type changes preserve saved values and show a validation error.
 
 ## Deferred navigation sections
 
-Main navigation contains Levels, Tiles, Meta blocks, Types, and Map objects.
-Objects, Gates, Mechanics, Switches, Quests, Puzzles, and Inventory objects are deferred in TODO.md.
+Main navigation contains Levels, Tiles, Meta blocks, and Types.
+Objects, Gates, Mechanics, Switches, Quests, Puzzles, Inventory objects, and Map objects are
+deferred in TODO.md.
 Their existing data remains in the project.
 
 ## Type hierarchy

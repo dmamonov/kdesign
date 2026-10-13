@@ -121,8 +121,8 @@ fun select(id: String) {
 }
 
 fun load() {
-    request("GET","/api/files?path=project.json","") { ok,text ->
-        try { check(ok) {text}; project=json.decodeFromString<Project>(text); project.validate(); loaded=true; selected="";tab="World map"; message="";restoreRoute() }
+    fileRequest("GET", "", "") { status,text,version ->
+        try { check(status == 200 && version.isNotEmpty()) {text}; fileVersion=version; project=json.decodeFromString<Project>(text); project.validate(); loaded=true; selected="";tab="World map"; message="";restoreRoute() }
         catch(e: Exception) {message="Could not load project: ${e.message}"}
         render()
     }
@@ -244,6 +244,7 @@ fun action(kind: String, id: String, v: String) {
             "reference-open" -> openReference(id)
             "text-usage-open" -> openTextUsage(id,v)
             "reload" -> {load();return}
+            "export-draft" -> {exportDraft(json.encodeToString(project));return}
             "save" -> {save();return}
             "dismiss" -> message=""
             "section" -> switchSection(id)

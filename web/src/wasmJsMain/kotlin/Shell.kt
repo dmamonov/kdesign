@@ -2,7 +2,7 @@ package kdesign.web
 
 import kdesign.*
 
-val sections = listOf("Levels", "Tiles", "Meta blocks", "Types", "Map objects")
+val sections = listOf("Levels", "Tiles", "Meta blocks", "Types")
 val sectionMemory = mutableMapOf<String, Pair<String, String>>()
 val expandedNodes = mutableSetOf<String>()
 var treeQuery = ""
@@ -122,7 +122,7 @@ fun renderShell() {
     val tabs=when {root && section=="Levels"->listOf("World map","Table");root->emptyList(); concept || type->listOf("Design"); level!=null->listOf("Canvas","Overview","Design brief");else->listOf("Editor","Properties")}
     mount("""
       <div class='app-shell'>
-      <header class='app-top'><div class='project-brand'><span class='brand-icon'>K</span><div><strong>${rich(project.title)}</strong><small>Adventure designer</small></div>${button("Edit title","new",v="Project",cls="tiny quiet")}</div><div class='header-actions'><span class='save-state' role='status'>${text(statusText())}</span>${button("↶ Undo","undo",cls="quiet")}${button("Retry / save now","save",cls="quiet")}</div></header>
+      <header class='app-top'><div class='project-brand'><span class='brand-icon'>K</span><div><strong>${rich(project.title)}</strong><small>Adventure designer</small></div>${button("Edit title","new",v="Project",cls="tiny quiet")}</div><div class='header-actions'><span class='save-state' role='status'>${text(statusText())}</span>${button("↶ Undo","undo",cls="quiet")}${if(saveConflict) button("Download draft","export-draft",cls="quiet") else button("Retry / save now","save",cls="quiet")}</div></header>
       <nav class='category-nav' aria-label='Object categories'>${sections.joinToString("") {"<button ${attr("section",it)} aria-current='${if(section==it) "page" else "false"}' class='${if(section==it) "active" else ""}'>${esc(it)}</button>"}}</nav>
       <aside class='navigation-panel' aria-label='Category navigation'><div class='tree-heading'>${button(text(section),"category-root",cls="tree-caption")}${createButton(true)}</div><div class='tree-search'><input id='tree-search' aria-label='Search ${text(section.lowercase())}' value='${esc(treeQuery)}' placeholder='Search'></div><div class='explorer'>${treeView()}</div></aside>
       <main data-view='${esc(section)}:${esc(selected)}:${esc(tab)}'>

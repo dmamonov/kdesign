@@ -5,6 +5,12 @@ import kotlinx.serialization.encodeToString
 
 val autosave = AutosaveState()
 var saveError = ""
+var fileVersion = ""
+var saveConflict = false
+@JsFun("(method, body, version, done) => window.designer.fileRequest(method, body, version, done)")
+external fun fileRequest(method: String, body: String, version: String, done: (Int, String, String) -> Unit)
+@JsFun("body => window.designer.exportDraft(body)")
+external fun exportDraft(body: String)
 val dirty get() = autosave.dirty
 val saving get() = autosave.inFlight != null
 val revision get() = autosave.revision
@@ -13,6 +19,7 @@ external fun scheduleSave(delay: Int, callback: () -> Unit)
 @JsFun("(text, pending) => window.designer.saveStatus(text, pending)")
 external fun saveStatus(text: String, pending: Boolean)
 fun statusText() = when {
+    saveConflict -> "Save conflict · download draft, then reload"
     saveError.isNotEmpty() -> "Save failed · retrying…"
     saving -> "Saving…"
     tableErrors.isNotEmpty() -> "Invalid input · draft not saved"
@@ -22,15 +29,20 @@ fun statusText() = when {
 fun updateSaveStatus() { saveStatus(statusText(), dirty || tableErrors.isNotEmpty()) }
 fun queueSave(delay: Int = 650) { updateSaveStatus();scheduleSave(delay) { save() } }
 fun save() {
+    if(saveConflict || fileVersion.isEmpty()) { updateSaveStatus();return }
     val savingRevision = autosave.begin() ?: run { updateSaveStatus();return }
     // Only validated model edits reach this queue. Invalid field drafts remain in the editor.
     val body = json.encodeToString(project)
     updateSaveStatus()
-    request("PUT", "/api/files?path=project.json", body) { ok, response ->
+    fileRequest("PUT", body, fileVersion) { status, response, version ->
+        val ok = status in 200..299 && version.isNotEmpty()
+        if(ok) fileVersion = version
+        saveConflict = status == 412 || status == 428
         autosave.complete(savingRevision,ok)
         saveError=if(ok) "" else response
         updateSaveStatus()
-        if(dirty) queueSave(if(ok) 0 else (1000 * (1 shl minOf(autosave.failures,5))).coerceAtMost(30000))
+        if(saveConflict) render()
+        if(dirty && !saveConflict) queueSave(if(ok) 0 else (1000 * (1 shl minOf(autosave.failures,5))).coerceAtMost(30000))
     }
 }
 /** Update existing entities as the user types, without remounting/focusing the UI. */

@@ -174,3 +174,24 @@ This avoids creating intermediate colors where outlines meet bright fills.
 Original PNG data, generation descriptions, and converted pixels are retained in
 `data/generations/*.json` for comparison and future conversion changes.
 Each original PNG is also saved beside its JSON with the same filename stem.
+
+## Persistence versions and conflict recovery
+
+`GET /api/files?path=...` returns the file contents and a content-based `ETag` header.
+Send that exact header value as `If-Match` on every update.
+To create a file, send `If-None-Match: *` instead.
+Unconditional writes return HTTP 428.
+Stale updates and attempts to create an existing file return HTTP 412 without changing the file.
+Version comparison and replacement are serialized within the server.
+Versions survive server restarts and detect file edits made outside the application before a save.
+Run only one server against a data directory.
+
+The browser retains the version it loaded and updates it after each successful save.
+A conflict stops autosave and exposes a Download draft button.
+Download the local project before reloading the current server copy and reconciling your edits.
+Retrying cannot force an outdated project over newer data.
+Before each accepted project replacement, the server stores the previous bytes in
+`data/backups/project-<content hash>.json`.
+Identical previous versions share a backup file.
+Backups are retained until manually removed.
+These persistence versions are separate from the project's schema version.

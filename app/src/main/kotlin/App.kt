@@ -15,6 +15,12 @@ import java.nio.file.*
 import java.time.Duration
 import java.util.concurrent.Executors
 
+class VersionConflict : RuntimeException("File changed since it was loaded. Save your draft and reload.")
+class VersionRequired : RuntimeException("Supply If-Match from GET, or If-None-Match: * for a new file.")
+data class FileSnapshot(val content: String, val version: String)
+fun fileVersion(bytes: ByteArray): String = "\"" + java.security.MessageDigest.getInstance("SHA-256")
+    .digest(bytes).joinToString("") { "%02x".format(it) } + "\""
+
 class FileStore(directory: Path) {
     val root: Path = Files.createDirectories(directory).toRealPath()
     fun resolve(name: String): Path {
@@ -24,6 +30,24 @@ class FileStore(directory: Path) {
         var part = root
         root.relativize(path).forEach { part = part.resolve(it); require(!Files.isSymbolicLink(part)) { "Symbolic links are not supported" } }
         return path
+    }
+    @Synchronized fun snapshot(name: String): FileSnapshot {
+        val bytes = Files.readAllBytes(resolve(name))
+        return FileSnapshot(bytes.toString(Charsets.UTF_8), fileVersion(bytes))
+    }
+    @Synchronized fun conditionalWrite(name: String, content: String, expected: String?, create: Boolean): FileSnapshot {
+        if(expected == null && !create) throw VersionRequired()
+        val path = resolve(name)
+        val current = if(Files.exists(path)) Files.readAllBytes(path) else null
+        if(if(create) current != null else current == null || fileVersion(current) != expected) {
+            throw VersionConflict()
+        }
+        // Keep the exact previous bytes for recovery, including changes made outside the app.
+        if(current != null && path == root.resolve("project.json")) {
+            writeBytes("backups/project-${fileVersion(current).trim('"')}.json", current)
+        }
+        write(name, content)
+        return snapshot(name)
     }
     fun read(name: String) = Files.readString(resolve(name))
     fun write(name: String, content: String) = writeBytes(name, content.toByteArray(Charsets.UTF_8))
@@ -122,8 +146,19 @@ fun main() {
             val query = exchange.requestURI.rawQuery?.split('&')?.associate { val p = it.split('=', limit=2); URLDecoder.decode(p[0], "UTF-8") to URLDecoder.decode(p.getOrElse(1) { "" }, "UTF-8") } ?: emptyMap()
             when {
                 path == "/api/health" && exchange.requestMethod == "GET" -> exchange.respond(200, buildJsonObject { put("status", "ok"); put("generation", !System.getenv("OPENAI_API_KEY").isNullOrBlank()) }.toString())
-                path == "/api/files" && exchange.requestMethod == "GET" -> exchange.respond(200, store.read(query["path"] ?: error("Missing path")), "text/plain")
-                path == "/api/files" && exchange.requestMethod == "PUT" -> { store.write(query["path"] ?: error("Missing path"), exchange.body()); exchange.respond(200, "{\"saved\":true}") }
+                path == "/api/files" && exchange.requestMethod == "GET" -> {
+                    val snapshot = store.snapshot(query["path"] ?: error("Missing path"))
+                    exchange.responseHeaders.set("ETag", snapshot.version)
+                    exchange.responseHeaders.set("Cache-Control", "no-store")
+                    exchange.respond(200, snapshot.content, "text/plain")
+                }
+                path == "/api/files" && exchange.requestMethod == "PUT" -> {
+                    val snapshot = store.conditionalWrite(query["path"] ?: error("Missing path"),
+                        exchange.body(), exchange.requestHeaders.getFirst("If-Match"),
+                        exchange.requestHeaders.getFirst("If-None-Match") == "*")
+                    exchange.responseHeaders.set("ETag", snapshot.version)
+                    exchange.respond(200, "{\"saved\":true}")
+                }
                 path == "/api/directory" && exchange.requestMethod == "GET" -> exchange.respond(200, store.list(query["path"] ?: "").toString())
                 path == "/api/generate" && exchange.requestMethod == "POST" -> exchange.respond(200, generateTile(exchange.body(),store))
                 path.startsWith("/api/") -> exchange.respond(405, "{\"error\":\"Unsupported endpoint or method\"}")
@@ -138,7 +173,7 @@ fun main() {
                 else -> exchange.respond(405, "{\"error\":\"Method not allowed\"}")
             }
         } catch (e: Exception) {
-            val code = when(e) { is GenerationError -> e.status; is NoSuchFileException -> 404; is IllegalArgumentException -> 400; else -> 500 }
+            val code = when(e) { is VersionConflict -> 412; is VersionRequired -> 428; is GenerationError -> e.status; is NoSuchFileException -> 404; is IllegalArgumentException -> 400; else -> 500 }
             exchange.respond(code, buildJsonObject { put("error", e.message ?: "Request failed"); if(e is GenerationError) put("code", e.errorCode) }.toString())
         } finally { exchange.close() }
     }

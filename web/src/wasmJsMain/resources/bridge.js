@@ -34,6 +34,19 @@ window.designer = {
       .then(async r => { const text = await r.text(); done(r.ok, text); })
       .catch(e => done(false, e.message));
   },
+  fileRequest(method, body, version, done) {
+    const headers={'Content-Type':'application/json'};
+    if(method==='PUT' && version) headers['If-Match']=version;
+    fetch('/api/files?path=project.json', {method, headers, cache:'no-store',
+      signal:AbortSignal.timeout(15000), ...(method==='GET'?{}:{body})})
+      .then(async r=>done(r.status, await r.text(), r.headers.get('ETag') || ''))
+      .catch(e=>done(0,e.message,''));
+  },
+  exportDraft(body) {
+    const url=URL.createObjectURL(new Blob([body],{type:'application/json'}));
+    const a=document.createElement('a');a.href=url;a.download='project-draft.json';a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  },
   bind(action) {
     window.designer.bindMap(action);
     window.designer.bindTileSelection(action);

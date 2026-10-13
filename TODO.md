@@ -12,4 +12,4 @@ Define how these concepts use the type system before restoring their dedicated i
 - [ ] Puzzles: reusable puzzle definitions and their requirements and solutions.
 - [ ] Inventory objects: keys, tools, and collectibles.
 
-Map objects remains available in navigation.
+- [ ] Map objects: landmarks, entrances, and checkpoints.
