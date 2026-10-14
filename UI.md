@@ -558,3 +558,8 @@ Changes autosave and support Undo.
 Shrinking cannot remove or clip existing placements.
 Show a field error when the new bounds would exclude a placement and retain the saved size.
 The Properties tab is preserved in the navigation URL.
+
+The level Properties tab also defines screen grid width and height in pixels.
+Each level defaults to 256 × 240, including existing levels without stored grid settings.
+Screen grid changes autosave independently of level dimensions and tile placement spacing.
+The map overlay, overview preview, and screen count use the level's screen dimensions.

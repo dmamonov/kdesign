@@ -28,7 +28,7 @@ val fieldLabels = listOf("Description", "Player mechanics", "Player goals", "Des
 // A portal points to an instance inside a level, not merely its reusable definition.
 @Serializable data class Portal(val label: String, val targetLevelId: String, val targetPath: List<String> = emptyList())
 @Serializable data class Block(val id: String, val name: String, val kind: String = "block", val width: Int = 16, val height: Int = 16, val children: List<Placement> = emptyList(), val properties: Map<String, String> = emptyMap(), val conceptIds: List<String> = emptyList(), val portals: List<Portal> = emptyList(), val anonymous: Boolean = false, val typeId: String = EMPTY_TYPE_ID, val overrides: Map<String, PrimitiveValue> = emptyMap())
-@Serializable data class Level(val id: String, val title: String, val rootId: String, val parentId: String? = null, val notes: Map<String, String> = emptyMap())
+@Serializable data class Level(val id: String, val title: String, val rootId: String, val parentId: String? = null, val notes: Map<String, String> = emptyMap(), val screenWidth: Int = 256, val screenHeight: Int = 240)
 @Serializable data class Concept(val id: String, val name: String, val category: String, val type: String, val description: String = "")
 @Serializable data class Project(val version: Int = 1, val title: String = "Moss & Ember", val tiles: List<Tile> = emptyList(), val blocks: List<Block> = emptyList(), val levels: List<Level> = emptyList(), val concepts: List<Concept> = emptyList(), val hotkeys: Map<String, String> = emptyMap(), val types: List<BlockType> = listOf(BlockType.Empty)) {
     fun name(id: String): String = tiles.find { it.id == id }?.name ?: blocks.find { it.id == id }?.name ?: levels.find { it.id == id }?.title ?: concepts.find { it.id == id }?.name ?: types.find { it.id == id }?.name ?: id
@@ -66,6 +66,7 @@ val fieldLabels = listOf("Description", "Player mechanics", "Player goals", "Des
         }
         blocks.forEach { visit(it.id, emptySet()) }
         levels.forEach { l ->
+            require(l.screenWidth in 8..4096 && l.screenHeight in 8..4096) { "Screen dimensions must be from 8 to 4096 pixels" }
             require(blocks.any { it.id == l.rootId && it.kind == "meta" }) { "Level root must be a meta block" }
             var parent = l.parentId; val seen = mutableSetOf(l.id)
             while (parent != null) {

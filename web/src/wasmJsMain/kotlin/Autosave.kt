@@ -56,7 +56,7 @@ fun editForm(id: String, content: String) {
         (modal=="Edit concept" || (modal.isEmpty() && section in categories)) -> id in setOf("new-name","concept-description","category","concept-type")
         modal.isNotEmpty() -> false // New-object dialogs commit via Create.
         tab=="Design brief" -> id=="title" || id=="parent" || id in levelFields
-        tab=="Properties" -> id in setOf("name","width","height","properties","concept")
+        tab=="Properties" -> id in setOf("name","width","height","screen-width","screen-height","properties","concept")
         else -> false
     }
     if(!active) return
@@ -83,7 +83,10 @@ fun editForm(id: String, content: String) {
                 }) else {
                     val size=content.toIntOrNull()
                     require(size!=null && size in 8..4096) {"Enter a whole number from 8 to 4096"}
-                    p.copy(blocks=p.blocks.map { block ->
+                    if(id=="screen-width" || id=="screen-height") p.copy(levels=p.levels.map {
+                        if(it.id!=selected) it else if(id=="screen-width") it.copy(screenWidth=size)
+                        else it.copy(screenHeight=size)
+                    }) else p.copy(blocks=p.blocks.map { block ->
                         if(block.id!=level.rootId) block else {
                             val resized=if(id=="width") block.copy(width=size) else block.copy(height=size)
                             require(resized.children.all { child ->

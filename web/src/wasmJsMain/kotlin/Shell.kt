@@ -83,7 +83,7 @@ fun treeView(): String {
         val children = levelNodes(l.id, depth+1)
         if(!matches(l.id) && children.isEmpty()) "" else node(l.id, depth, children, project.levels.any {it.parentId==l.id})
     }
-    val entries = if(section=="Levels") levelNodes(null,0) else sectionItems().filter(::matches).joinToString("") { id ->
+    val entries = if(section=="Levels") levelNodes(null,0) else sectionItems().let { if(section=="Tiles") it.asReversed() else it }.filter(::matches).joinToString("") { id ->
         val b = project.blocks.find {it.id==id}
         val children = b?.children?.joinToString("") { c ->
             "<div class='tree-instance' style='--depth:1'>" + button("${objectIcon(c.assetId)}<span>${text(project.name(c.assetId))}</span><small>${c.x},${c.y}</small>","instance-open",id,c.id) + "</div>"

@@ -7,6 +7,31 @@ fun typeSelect(id: String, label: String, selectedId: String, options: List<Pair
         "<option value='${esc(key)}' ${if(key==selectedId) "selected" else ""}>${text(name)}</option>"
     } + "</select></label>"
 
+fun tileParentPanel(tile: Tile): String {
+    val type=project.types.first {it.id==tile.typeId}
+    if(type !is BlockType.CompositeType || type.id==EMPTY_TYPE_ID) {
+        return "<section class='panel padded'>" + typeSelect("asset-type","Type",tile.typeId,
+            project.types.filter { candidate -> project.blocks.none {
+                it.anonymous && it.typeId==candidate.id
+            } }.map {it.id to it.name}) + "</section>"
+    }
+    fun descendsFrom(id: String): Boolean = id==type.id ||
+        (project.types.find {it.id==id} as? BlockType.CompositeType)?.parentTypes
+            ?.any {descendsFrom(it)} == true
+    val candidates=project.types.filter { candidate ->
+        !descendsFrom(candidate.id) && project.blocks.none {it.anonymous && it.typeId==candidate.id}
+    }
+    val parents=type.parentTypes
+    return "<section class='panel padded'>" +
+        (parents.indices.toList()+parents.size).joinToString("") { index ->
+            val current=parents.getOrNull(index).orEmpty()
+            typeSelect("tile-parent:$index",if(index==0) "Parent type" else if(current.isEmpty())
+                "Add parent type" else "Parent type ${index+1}",current,
+                listOf("" to if(current.isEmpty()) "Choose a type" else "Remove parent") +
+                    candidates.filter {it.id==current || it.id !in parents}.map {it.id to it.name})
+        } + "</section>"
+}
+
 fun primitiveInput(id: String, label: String, value: PrimitiveValue): String = when(value) {
     is PrimitiveValue.EnumValue -> typeSelect(id,label,value.value,
         value.primitiveType.options.map {it to it})
@@ -73,10 +98,24 @@ fun Project.editOverrides(asset: String, field: String, value: PrimitiveValue?, 
 
 fun editTypedField(id: String, content: String): Boolean {
     if(modal.isNotEmpty()) return false
-    if(!id.startsWith("type-") && id!="asset-type" && !id.startsWith("override:") &&
+    if(!id.startsWith("tile-parent:") && !id.startsWith("type-") && id!="asset-type" && !id.startsWith("override:") &&
         !id.startsWith("instance-override:")) return false
     try {
         change { p -> when {
+            id.startsWith("tile-parent:") -> {
+                val tile=p.tiles.first {it.id==selected}
+                val index=id.substringAfter(':').toInt()
+                p.copy(types=p.types.map { type ->
+                    if(type.id!=tile.typeId) type else {
+                        require(type is BlockType.CompositeType && type.id!=EMPTY_TYPE_ID)
+                        val parents=type.parentTypes.toMutableList()
+                        if(index<parents.size) {
+                            if(content.isEmpty()) parents.removeAt(index) else parents[index]=content
+                        } else if(content.isNotEmpty()) parents.add(content)
+                        type.copy(parentTypes=parents)
+                    }
+                })
+            }
             id=="asset-type" -> p.copy(
                 tiles=p.tiles.map {if(it.id==selected) it.copy(typeId=content) else it},
                 blocks=p.blocks.map {if(it.id==selected) it.copy(typeId=content) else it})
@@ -112,7 +151,7 @@ fun editTypedField(id: String, content: String): Boolean {
             } })
         } }
         tableErrors.remove(id);tableCellState(id,"");publishReferenceObjects()
-        if(id in listOf("asset-type","type-primitive","type-parent")) render()
+        if(id.startsWith("tile-parent:") || id in listOf("asset-type","type-primitive","type-parent")) render()
     } catch(e: Exception) {tableErrors.add(id);tableCellState(id,e.message ?: "Invalid type value")}
     updateSaveStatus()
     return true

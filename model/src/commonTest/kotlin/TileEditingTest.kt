@@ -1,6 +1,20 @@
 package kdesign
 import kotlin.test.*
 class TileEditingTest {
+    @Test fun flipsMirrorBothSizesAndPreserveTransparency() {
+        for(size in listOf(8,16)) {
+            val tile=Tile("t","Test",size,List(size*size) {if(it==0) -1 else it%64})
+            val horizontal=tile.flip(true)
+            val vertical=tile.flip(false)
+            assertEquals(tile.pixels.take(size).reversed(),horizontal.pixels.take(size))
+            assertEquals(tile.pixels.takeLast(size),vertical.pixels.take(size))
+            assertEquals(-1,horizontal.pixels[size-1])
+            assertEquals(-1,vertical.pixels[(size-1)*size])
+            assertEquals(tile,horizontal.flip(true))
+            assertEquals(tile,vertical.flip(false))
+        }
+    }
+
     @Test fun overlappingMoveUsesOriginalPixelsAndClearsSource() {
         val t=Tile("t","Test",8,List(64) {it%64})
         val moved=t.moveArea(MapArea(1,1,3,2),2,1)

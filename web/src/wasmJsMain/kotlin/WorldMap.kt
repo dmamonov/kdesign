@@ -5,7 +5,7 @@ import kdesign.*
 const val screenWidth = 256
 const val screenHeight = 240
 
-fun screenGrid(b: Block): String = "<div class='screen-grid' aria-hidden='true'>" +
+fun screenGrid(b: Block, screenWidth: Int, screenHeight: Int): String = "<div class='screen-grid' aria-hidden='true'>" +
     (0 until b.height step screenHeight).joinToString("") { y ->
         (0 until b.width step screenWidth).joinToString("") { x ->
             "<span style='left:${x*100.0/b.width}%;top:${y*100.0/b.height}%;width:${minOf(screenWidth,b.width-x)*100.0/b.width}%;height:${minOf(screenHeight,b.height-y)*100.0/b.height}%'>${x/screenWidth+1},${y/screenHeight+1}</span>"
@@ -14,7 +14,7 @@ fun screenGrid(b: Block): String = "<div class='screen-grid' aria-hidden='true'>
 
 fun levelMapPreview(level: Level): String {
     val b=project.blocks.first {it.id==level.rootId}
-    return "<div class='level-map-preview' style='aspect-ratio:${b.width}/${b.height}'>${svg(b.id)}${screenGrid(b)}</div>"
+    return "<div class='level-map-preview' style='aspect-ratio:${b.width}/${b.height}'>${svg(b.id)}${screenGrid(b,level.screenWidth,level.screenHeight)}</div>"
 }
 
 fun worldMapView(level: Level? = null): String {
@@ -29,7 +29,7 @@ fun worldMapView(level: Level? = null): String {
             block.children.forEach {visit(it.assetId)}
         }
         visit(b.id)
-        "<article class='panel world-level'><div class='panel-bar'>${button(text(l.title),"select",l.id,cls="quiet")}<span>${b.width} × ${b.height} · ${((b.width+255)/256)*((b.height+239)/240)} screens · 256 × 240 px</span></div>" +
+        "<article class='panel world-level'><div class='panel-bar'>${button(text(l.title),"select",l.id,cls="quiet")}<span>${b.width} × ${b.height} · ${((b.width+l.screenWidth-1)/l.screenWidth)*((b.height+l.screenHeight-1)/l.screenHeight)} screens · ${l.screenWidth} × ${l.screenHeight} px</span></div>" +
             "<button class='open-level-map' aria-label='Open map of ${text(l.title)}' ${attr("select",l.id)}>${levelMapPreview(l)}</button>" +
             "<div class='world-links'>" +
             (l.parentId?.let {button("↑ ${text(project.name(it))}","select",it,cls="quiet")} ?: "") +

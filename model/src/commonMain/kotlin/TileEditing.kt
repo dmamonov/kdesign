@@ -13,3 +13,10 @@ fun Tile.moveArea(area: MapArea, x: Int, y: Int): Tile {
         result[(y+dy)*size+x+dx]=pixels[(area.y+dy)*size+area.x+dx]
     return copy(pixels=result)
 }
+
+/** Mirror the whole tile while preserving palette indices and transparency. */
+fun Tile.flip(horizontal: Boolean): Tile = copy(pixels=List(size*size) { index ->
+    val x=index%size
+    val y=index/size
+    pixels[if(horizontal) y*size+(size-1-x) else (size-1-y)*size+x]
+})
