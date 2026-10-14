@@ -119,7 +119,7 @@ fun renderShell() {
     val concept=project.concepts.any {it.id==selected}
     val type=project.types.any {it.id==selected}
     val root=selected.isEmpty()
-    val tabs=when {root && section=="Levels"->listOf("World map","Table");root->emptyList(); concept || type->listOf("Design"); level!=null->listOf("Canvas","Overview","Design brief");else->listOf("Editor","Properties")}
+    val tabs=when {root && section=="Levels"->listOf("World map","Table");root->emptyList(); concept || type->listOf("Design"); level!=null->listOf("Canvas","Overview","Design brief","Properties");else->listOf("Editor","Properties")}
     mount("""
       <div class='app-shell'>
       <header class='app-top'><div class='project-brand'><span class='brand-icon'>K</span><div><strong>${rich(project.title)}</strong><small>Adventure designer</small></div>${button("Edit title","new",v="Project",cls="tiny quiet")}</div><div class='header-actions'><span class='save-state' role='status'>${text(statusText())}</span>${button("↶ Undo","undo",cls="quiet")}${if(saveConflict) button("Download draft","export-draft",cls="quiet") else button("Retry / save now","save",cls="quiet")}</div></header>
@@ -130,7 +130,7 @@ fun renderShell() {
       ${if(message.isNotBlank()) "<div class='notice' role='status'>${text(message)}${button("Dismiss","dismiss",cls="tiny")}</div>" else ""}
       ${if(tabs.isNotEmpty()) "<div class='tabbar'>${tabs.joinToString("") {button(when(it){"Canvas"->"Map";"Design brief"->"Design";"Editor"->if(block!=null) "Editor (${project.placementUsageCount(block.id)} usages)" else it;else->it},"tab",it,cls=if(tab==it) "active" else "")}}<span>${if(tile!=null) "${tile.size} × ${tile.size} · NES PALETTE" else if(block!=null) "${block.width} × ${block.height} · ${block.children.size} PLACEMENTS" else if(root) "" else "DESIGN CONCEPT"}</span></div>" else ""}
       ${hotkeyConflict?.let { (asset,key) -> "<div class='notice' role='alert'><span>Key $key is assigned to ${text(project.name(project.hotkeys[key] ?: ""))}. Reassign it to ${text(project.name(asset))}?</span><div>${button("Reassign key","hotkey-confirm")}${button("Cancel","hotkey-cancel")}</div></div>" } ?: ""}
-      <div class='page-body'>${when {root && section=="Levels"->if(tab=="Table") tableView() else worldMapView();root->libraryView();type->typeWorkspace();concept->conceptWorkspace();tab=="Overview" && level!=null->worldMapView(level);tab=="Design brief" && level!=null->briefView(level);tab=="Properties"->propertiesView()+typedProperties(selected);tile!=null->tileView(tile);block!=null->canvasView(block,level);else->libraryView()}}</div></main></div>
+      <div class='page-body'>${when {root && section=="Levels"->if(tab=="Table") tableView() else worldMapView();root->libraryView();type->typeWorkspace();concept->conceptWorkspace();tab=="Overview" && level!=null->worldMapView(level);tab=="Design brief" && level!=null->briefView(level);tab=="Properties" && level!=null->levelPropertiesView(level);tab=="Properties"->propertiesView()+typedProperties(selected);tile!=null->tileView(tile);block!=null->canvasView(block,level);else->libraryView()}}</div></main></div>
       ${if(inliningId.isNotBlank()) inlineConfirmationView() else ""}${if(deletingId.isNotBlank()) deletionView() else ""}${if(usageId.isNotBlank()) usagesView() else ""}${if(modal.isNotBlank()) modalView() else ""}
     """.trimIndent())
 }

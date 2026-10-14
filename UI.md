@@ -549,3 +549,12 @@ The Levels sidebar heading still opens the overview table.
 Anonymous wrapper types are hidden from the Types sidebar and hierarchy overview, including search.
 They remain available through the configured placement's Edit type action.
 Public descendants appear under the nearest visible ancestor without changing their stored parents.
+
+## Level properties
+
+Each level has a Properties tab with an editable name, width, and height in pixels.
+Dimensions edit the level's root meta block and accept whole numbers from 8 to 4096.
+Changes autosave and support Undo.
+Shrinking cannot remove or clip existing placements.
+Show a field error when the new bounds would exclude a placement and retain the saved size.
+The Properties tab is preserved in the navigation URL.

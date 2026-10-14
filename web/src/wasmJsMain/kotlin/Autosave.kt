@@ -74,6 +74,27 @@ fun editForm(id: String, content: String) {
                 "parent" -> l.copy(parentId=content.ifBlank {null})
                 else -> l.copy(notes=l.notes+(id to content))
             } })
+            tab=="Properties" && p.levels.any {it.id==selected} -> {
+                val level=p.levels.first {it.id==selected}
+                if(id=="name") p.copy(levels=p.levels.map {
+                    if(it.id==selected) it.copy(title=content.trim().also {
+                        require(it.isNotBlank()) {"Enter a name"}
+                    }) else it
+                }) else {
+                    val size=content.toIntOrNull()
+                    require(size!=null && size in 8..4096) {"Enter a whole number from 8 to 4096"}
+                    p.copy(blocks=p.blocks.map { block ->
+                        if(block.id!=level.rootId) block else {
+                            val resized=if(id=="width") block.copy(width=size) else block.copy(height=size)
+                            require(resized.children.all { child ->
+                                val (w,h)=p.size(child.assetId)
+                                child.x+w<=resized.width && child.y+h<=resized.height
+                            }) {"Move or remove placements outside the new level size first"}
+                            resized
+                        }
+                    })
+                }
+            }
             else -> p.copy(tiles=p.tiles.map { t -> if(t.id==selected && id=="name") t.copy(name=content.trim().also {require(it.isNotBlank()) {"Enter a name"}}) else t },
                 blocks=p.blocks.map { b -> if(b.id!=selected) b else when(id) {
                     "name" -> b.copy(name=content.trim().also {require(it.isNotBlank()) {"Enter a name"}})

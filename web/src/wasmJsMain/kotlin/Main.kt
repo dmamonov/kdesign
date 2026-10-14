@@ -89,6 +89,17 @@ fun tableField(level: Level, key: String, label: String, content: String): Strin
     field("table-${level.id}-$key", "${project.displayText(level.title)} · $label", content, multiline=true)
         .replace("data-references='true'", "data-references='true' data-table-owner='${esc(level.id)}' data-table-field='$key'")
 
+fun levelPropertiesView(level: Level): String {
+    val root = project.blocks.first { it.id == level.rootId }
+    fun dimension(id: String, label: String, size: Int) =
+        "<div class='field-wrap'><label class='field' for='$id'>$label" +
+            "<input id='$id' type='number' min='8' max='4096' step='1' value='$size'>" +
+            "</label></div>"
+    return "<section class='panel padded'>" + field("name", "Name", level.title) +
+        "<div class='form-grid'>" + dimension("width", "Width (pixels)", root.width) +
+        dimension("height", "Height (pixels)", root.height) + "</div></section>"
+}
+
 fun propertiesView(): String {
     val b=currentBlock(); val t=currentTile()
     return "<section class='panel padded'><div class='section-title'><h3>Definition properties</h3><span class='muted'>Changes save automatically</span></div>${field("name","Name", t?.name ?: b?.name ?: "")}<p class='muted'>Stable ID: ${esc(selected)}</p>" + if(b!=null) "<div class='form-grid'>${field("width","Width (pixels)",b.width.toString())}${field("height","Height (pixels)",b.height.toString())}<label class='field'>Linked concepts<select id='concept'><option value=''>No concept</option>${project.concepts.joinToString(""){"<option value='${esc(it.id)}' ${if(it.id in b.conceptIds) "selected" else ""}>${text(it.category)} / ${text(it.name)}</option>"}}</select><small>This first editor links one concept per definition.</small></label></div><h3>Portals</h3>${b.portals.mapIndexed { i,p -> "<div class='instance'><span>${text(p.label)} → ${text(project.name(p.targetLevelId))} / ${text(p.targetPath.joinToString("/"))}</span>${button("Remove","portal-remove",i.toString(),cls="tiny")}</div>" }.joinToString("")}</section>" else "<p class='muted'>${t?.size} × ${t?.size} pixels · NES palette · transparent background</p></section>"

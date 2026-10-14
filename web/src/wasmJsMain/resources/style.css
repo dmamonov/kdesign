@@ -22,7 +22,7 @@
 .category-nav button.active{background:#bde89b09;border-bottom-color:var(--accent);color:var(--accent)}
 .navigation-panel{grid-column:1;grid-row:3;position:sticky;top:117px;height:calc(100vh - 117px);display:flex;flex-direction:column;border-right:1px solid var(--line);background:#171f1c;min-height:0;padding:22px 12px 14px}
 .tree-heading{display:flex;justify-content:space-between;align-items:center;padding:0 10px 20px;font-weight:600}.tree-heading small{font-size:8px;letter-spacing:1.5px}.tree-search{font-size:10px;color:#a0afa2;padding:0 8px 18px;display:block}.tree-search input{margin-top:7px;padding:9px;font-size:11px;background:#101814}.explorer{min-height:0;padding:0 2px}
-.explorer .tree-root{display:block;font-size:12px;font-weight:600;border:1px solid #364237;border-radius:5px;margin-bottom:14px;padding:11px}.tree-root small{font-size:9px;font-weight:400;margin-top:3px}.tree-row{display:flex;align-items:center;margin:2px 0;border-radius:5px;padding-left:calc(var(--depth)*14px);min-width:0}.tree-row.selected{background:#2c3a29;box-shadow:inset 2px 0 var(--accent)}.explorer .tree-toggle{flex:none;width:23px;padding:8px 3px;justify-content:center;font-size:13px}.tree-spacer{width:23px;flex:none}.explorer .tree-label{display:block;min-width:0;padding:9px 6px;color:#c6d1c7;font-size:12px}.tree-label>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tree-label small{font-size:9px}.tree-instance{margin-left:26px;border-left:1px solid #3b4a3e}.tree-instance button{display:block;overflow-wrap:anywhere}.tree-instance small{font-size:8px}.tree-create{border-top:1px solid var(--line);padding:14px 8px 0;margin-top:15px}.tree-create button{width:100%;font-size:11px}.tree-create small{margin-top:12px;font-size:9px;text-align:center}
+.explorer .tree-root{display:block;font-size:12px;font-weight:600;border:1px solid #364237;border-radius:5px;margin-bottom:14px;padding:11px}.tree-root small{font-size:9px;font-weight:400;margin-top:3px}.tree-row{display:flex;align-items:center;margin:2px 0;border-radius:5px;padding-left:calc(var(--depth)*26px);min-width:0}.tree-row.selected{background:#2c3a29;box-shadow:inset 2px 0 var(--accent)}.explorer .tree-toggle{flex:none;width:23px;padding:8px 3px;justify-content:center;font-size:13px}.tree-spacer{width:23px;flex:none}.explorer .tree-label{display:block;min-width:0;padding:9px 6px;color:#c6d1c7;font-size:12px}.tree-label>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tree-label small{font-size:9px}.tree-instance{margin-left:26px;border-left:1px solid #3b4a3e}.tree-instance button{display:block;overflow-wrap:anywhere}.tree-instance small{font-size:8px}.tree-create{border-top:1px solid var(--line);padding:14px 8px 0;margin-top:15px}.tree-create button{width:100%;font-size:11px}.tree-create small{margin-top:12px;font-size:9px;text-align:center}
 .app-shell main{grid-column:2;grid-row:3;margin:0;min-width:0;min-height:calc(100vh - 117px);padding-bottom:20px}.workspace-location{height:48px;display:flex;align-items:center;gap:8px;padding:0 28px;border-bottom:1px solid #26312b;color:#85968a;font-size:11px}.workspace-location button{font-size:11px;padding:5px 8px}.workspace-location>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.page-heading{padding:25px 28px 24px;gap:16px}h1{font-size:26px}.page-heading p{max-width:650px;line-height:1.6}.page-body{padding:22px 28px}.tabbar{margin:0 28px}.notice{margin:0 28px 15px}.editor-layout{grid-template-columns:minmax(0,1fr) 252px;gap:18px}.library-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}.library-grid .panel{margin:0}.library-card{padding:20px}.library-art{height:110px;background:repeating-conic-gradient(#202c25 0% 25%,#263329 0% 50%) 50%/20px 20px;border-radius:5px;padding:15px;display:flex;justify-content:center;margin-bottom:18px}.library-art svg{height:100%;max-width:100%}.library-card .concept-actions{margin-top:20px}.library-card h3{font-size:16px}.library-card p{min-height:20px}.empty h2{font-size:20px}.empty p{margin:12px 0 20px}.panel{background:#1b2420}.scene-scroll{max-height:60vh}.panel-bar{flex-wrap:wrap;gap:8px}.editable-levels .panel-bar{position:sticky;left:0}.editable-levels td:first-child{box-shadow:3px 0 12px #0002}.tree-row:focus-within{outline:1px solid #8daa73}
 @media(min-width:1700px){.editor-layout{grid-template-columns:minmax(0,1fr) 300px}.page-body,.page-heading{padding-left:40px;padding-right:40px}}
 @media(max-width:1100px){.app-shell{grid-template-columns:215px minmax(0,1fr)}.editor-layout{grid-template-columns:minmax(0,1fr)}.inspector{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.inspector .panel{margin:0}.heading-actions{flex-direction:row}.page-body,.page-heading{padding-left:20px;padding-right:20px}.tabbar{margin:0 20px}}
@@ -89,9 +89,16 @@ button.danger{color:#ffb6a6;border-color:#865346}button.danger:hover{background:
 .explorer .tree-label{display:flex;align-items:center;gap:7px;padding:5px 4px;font-size:12px;flex:1}
 .tree-label>span:not(.object-icon){min-width:0;flex:1}
 .object-icon{display:inline-block;flex:none;width:16px;text-align:center;color:#a9bd9a;font-size:14px;line-height:1}
-.explorer .tree-toggle{width:16px;padding:5px 0}
-.tree-spacer{width:0}
-.tree-instance{margin-left:18px}
+.explorer .tree-toggle,.type-hierarchy .tree-toggle{
+  display:flex;align-items:center;justify-content:center;flex:none;
+  width:24px;height:24px;padding:0;font-size:20px;line-height:1;font-weight:700;
+  color:var(--accent);background:#2b382d;border:1px solid #637b56;border-radius:4px;
+}
+.explorer .tree-toggle:hover,.type-hierarchy .tree-toggle:hover{
+  color:#192718;background:var(--accent);border-color:var(--accent);
+}
+.tree-spacer{width:24px;flex:none}
+.tree-instance{margin-left:26px;padding-left:22px;border-left:2px solid #4d6147}
 .tree-instance button{display:flex;align-items:center;gap:6px;padding:4px 6px;font-size:11px;min-width:0}
 .tree-instance button>span:not(.object-icon){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .tree-instance small{margin:0 0 0 auto;white-space:nowrap;font-size:9px}
@@ -116,7 +123,6 @@ button.danger{color:#ffb6a6;border-color:#865346}button.danger:hover{background:
 
 .type-hierarchy{overflow:auto}
 .type-hierarchy .tree-row{min-width:340px}
-.type-hierarchy .tree-toggle{width:23px;flex:none;padding:5px 0}
 .type-hierarchy .tree-label{display:flex;align-items:center;gap:7px;min-width:0;text-align:left}
 .type-hierarchy .type-kind{margin-left:auto;padding:0 12px;white-space:nowrap}
 .palette-groups{display:flex;gap:5px;overflow-x:auto;padding:8px;scrollbar-width:thin}

@@ -20,7 +20,7 @@ fun restoreRoute() {
     if(id in project.objectIds()) select(id)
     val tabs=when {
         selected.isEmpty() -> if(section=="Levels") listOf("World map","Table") else listOf("Library")
-        currentLevel()!=null -> listOf("Canvas","Overview","Design brief")
+        currentLevel()!=null -> listOf("Canvas","Overview","Design brief","Properties")
         project.concepts.any {it.id==selected} || project.types.any {it.id==selected} -> listOf("Design")
         else -> listOf("Editor","Properties")
     }
